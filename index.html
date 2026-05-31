@@ -1361,12 +1361,18 @@ async function loadAllData() {
     setTimeout(() => reject(new Error(`Timeout: ${label} took too long`)), ms)
   );
 
+  const showToast = (msg) => {
+    const t = document.getElementById('debug-toast');
+    if (t) { t.textContent = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 8000); }
+  };
+
   const safeLoad = async (fn, label) => {
     try {
       await Promise.race([fn(), timeout(8000, label)]);
-      console.log(`✅ ${label} loaded`);
+      console.log('OK: ' + label);
     } catch(e) {
-      console.error(`❌ ${label} failed:`, e.message);
+      console.error('FAIL: ' + label + ' — ' + e.message);
+      showToast('Error: ' + label + ' — ' + e.message);
     }
   };
 
@@ -3286,7 +3292,16 @@ document.getElementById('modal-monthpicker-overlay').onclick = (e) => {
   });
 
   // Check existing session
-  const { data: { session } } = await _sb.auth.getSession();
+  let sessionResult;
+  try {
+    sessionResult = await _sb.auth.getSession();
+  } catch(e) {
+    const t = document.getElementById('debug-toast');
+    if (t) { t.textContent = 'Auth error: ' + e.message; t.style.display = 'block'; }
+    showAuthPage('masuk');
+    return;
+  }
+  const { data: { session } } = sessionResult;
   if (isReset) {
     showAuthPage('reset');
   } else if (session?.user) {
@@ -3300,5 +3315,9 @@ document.getElementById('modal-monthpicker-overlay').onclick = (e) => {
 </script>
 <div class="nav-fade"></div>
 </div><!-- /app-shell -->
+
+<!-- Debug toast -->
+<div id="debug-toast" style="display:none;position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#E53935;color:white;padding:12px 20px;border-radius:12px;font-size:12px;font-weight:400;font-family:'Manrope',sans-serif;z-index:9999;max-width:360px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.3);"></div>
+
 </body>
 </html>
