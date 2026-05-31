@@ -1,0 +1,3279 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>HabitKu</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400&display=swap');
+
+/* ============================================
+   DESIGN TOKENS
+   ============================================ */
+:root {
+  --font: 'Manrope', sans-serif;
+
+  /* Light mode */
+  --bg:           #f0f0ef;
+  --bg-card:      #ffffff;
+  --bg-nav:       #ffffff;
+  --bg-sheet:     #ffffff;
+  --text-primary:   #111111;
+  --text-secondary: #666666;
+  --text-muted:     #aaaaaa;
+  --border:         #e4e4e4;
+  --border-strong:  #cccccc;
+  --border-dashed:  #d0d0d0;
+  --shadow:         rgba(0,0,0,0.07);
+  --shadow-strong:  rgba(0,0,0,0.13);
+  --shadow-card:    0 2px 12px rgba(0,0,0,0.07);
+  --overlay:        rgba(0,0,0,0.42);
+
+  /* Habit colors */
+  --hc-1:  #E53935;
+  --hc-2:  #FB8C00;
+  --hc-3:  #F9A825;
+  --hc-4:  #7CB342;
+  --hc-5:  #2E7D32;
+  --hc-6:  #00ACC1;
+  --hc-7:  #1E88E5;
+  --hc-8:  #5E35B1;
+  --hc-9:  #D81B60;
+  --hc-10: #F06292;
+  --hc-11: #8D6E63;
+  --hc-12: #FF7043;
+  --hc-13: #26A69A;
+  --hc-14: #424242;
+  --hc-15: #9E9E9E;
+
+  --radius-sm:   8px;
+  --radius-md:   16px;
+  --radius-lg:   20px;
+  --radius-xl:   28px;
+  --radius-full: 9999px;
+
+  --nav-h: 80px;
+  --sheet-transition: 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Dark mode */
+[data-theme="dark"] {
+  --bg:             #161616;
+  --bg-card:        #222222;
+  --bg-nav:         #1c1c1c;
+  --bg-sheet:       #222222;
+  --text-primary:   #f0f0f0;
+  --text-secondary: #999999;
+  --text-muted:     #555555;
+  --border:         #2e2e2e;
+  --border-strong:  #404040;
+  --border-dashed:  #3a3a3a;
+  --shadow:         rgba(0,0,0,0.35);
+  --shadow-strong:  rgba(0,0,0,0.55);
+  --shadow-card:    0 2px 12px rgba(0,0,0,0.35);
+  --overlay:        rgba(0,0,0,0.65);
+}
+
+/* ============================================
+   RESET & BASE
+   ============================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  max-width: 430px;
+  margin: 0 auto;
+  overflow-x: hidden;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Ensure all interactive elements inherit Manrope */
+button, input, select, textarea {
+  font-family: var(--font);
+}
+
+/* ============================================
+   PAGES
+   ============================================ */
+.page {
+  display: none;
+  min-height: 100vh;
+  padding-bottom: calc(var(--nav-h) + 32px);
+}
+.page.active { display: block; }
+
+/* ============================================
+   BOTTOM NAV — floating pill
+   ============================================ */
+.bottom-nav {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 400px;
+  height: 64px;
+  background: var(--bg-nav);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 100;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+}
+/* Fade behind nav — sits between content and the pill */
+.nav-fade {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  height: 96px;
+  background: linear-gradient(to top, var(--bg) 45%, transparent 100%);
+  pointer-events: none;
+  z-index: 99;
+}
+
+.nav-item {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 3px;
+  cursor: pointer; padding: 10px 28px;
+  border-radius: var(--radius-full);
+  border: none; background: none;
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: 10px; font-weight:400;
+  letter-spacing: 0.01em;
+  transition: color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-item svg {
+  width: 22px; height: 22px;
+  stroke: currentColor; fill: none; stroke-width: 1.8;
+}
+.nav-item.active { color: var(--text-primary); }
+.nav-item.active svg { stroke-width: 2.2; }
+
+/* ============================================
+   CARDS
+   ============================================ */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 24px;
+  border-radius: var(--radius-full);
+  border: none; cursor: pointer;
+  font-family: var(--font); font-size: 15px; font-weight:400;
+  transition: all 0.18s; -webkit-tap-highlight-color: transparent;
+}
+.btn-primary { background: var(--text-primary); color: var(--bg-card); }
+.btn-primary:active { opacity: 0.82; transform: scale(0.97); }
+.btn-secondary {
+  background: transparent; color: var(--text-primary);
+  border: 1.5px solid var(--border-strong);
+}
+.btn-danger { background: transparent; color: #E53935; border: 1.5px solid #E53935; }
+.btn-full { width: 100%; }
+.btn-sm { padding: 9px 16px; font-size: 13px; }
+
+/* FAB */
+.fab-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 22px 4px;
+  gap: 12px;
+}
+.fab-row button:active { transform: scale(0.96); }
+.fab {
+  width: 48px; height: 48px;
+  border-radius: var(--radius-full);
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 3px 12px var(--shadow-strong);
+  transition: transform 0.18s;
+  -webkit-tap-highlight-color: transparent;
+}
+.fab:active { transform: scale(0.91); }
+.fab-right { background: var(--text-primary); color: var(--bg-card); }
+.fab-left  {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-strong);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.fab svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+/* ============================================
+   BOTTOM SHEET
+   ============================================ */
+.sheet-overlay {
+  position: fixed; inset: 0;
+  background: var(--overlay);
+  z-index: 200;
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--sheet-transition);
+}
+.sheet-overlay.open { opacity: 1; pointer-events: all; }
+
+.sheet {
+  position: fixed; bottom: 0; left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  width: 100%; max-width: 430px;
+  background: var(--bg-sheet);
+  border-radius: 28px 28px 0 0;
+  z-index: 201;
+  transition: transform var(--sheet-transition);
+  max-height: 92vh;
+  display: flex; flex-direction: column;
+}
+.sheet.open { transform: translateX(-50%) translateY(0); }
+
+.sheet-handle {
+  width: 36px; height: 4px;
+  background: var(--border-strong); border-radius: 2px;
+  margin: 14px auto 0;
+  flex-shrink: 0;
+}
+.sheet-header { padding: 14px 22px 0; flex-shrink: 0; display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+.sheet-title { font-size: 19px; font-weight:400; color: var(--text-primary); flex: 1; min-width: 0; }
+.sheet-body {
+  padding: 16px 22px 36px;
+  overflow-y: auto; flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================
+   FORM ELEMENTS
+   ============================================ */
+.form-group { margin-bottom: 22px; }
+.form-label {
+  display: block;
+  font-size: 12px; font-weight:400;
+  color: var(--text-secondary);
+  margin-bottom: 9px; letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.form-input {
+  width: 100%; padding: 13px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font); font-size: 15px; font-weight:400;
+  outline: none; transition: border-color 0.2s;
+}
+.form-input:focus { border-color: var(--text-primary); }
+
+/* Reflection input — also pill shaped */
+.reflection-input-wrap {
+  display: flex; gap: 8px; align-items: center;
+}
+.reflection-input-wrap .form-input {
+  flex: 1;
+}
+
+/* ============================================
+   COLOR PICKER
+   ============================================ */
+.color-grid {
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+}
+.color-dot {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-full);
+  cursor: pointer; border: 3px solid transparent;
+  transition: transform 0.14s, border-color 0.14s;
+  position: relative;
+}
+.color-dot:active { transform: scale(0.88); }
+.color-dot.selected { border-color: var(--text-primary); transform: scale(1.08); }
+.color-dot.selected::after {
+  content: '✓';
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 16px; font-weight:400;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.35);
+}
+
+/* ============================================
+   EMOJI PICKER
+   ============================================ */
+.emoji-btn {
+  width: 54px; height: 54px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  font-size: 26px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.18s;
+  flex-shrink: 0;
+}
+.emoji-btn:focus { border-color: var(--text-primary); outline: none; }
+.emoji-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 4px; max-height: 190px; overflow-y: auto;
+}
+.emoji-option {
+  width: 36px; height: 36px; font-size: 20px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border-radius: 8px;
+  transition: background 0.12s;
+}
+.emoji-option:hover { background: var(--border); }
+
+/* ============================================
+   REPEAT TYPE
+   ============================================ */
+.repeat-tabs { display: flex; gap: 8px; }
+.repeat-tab {
+  flex: 1; padding: 11px; text-align: center;
+  border: 1.5px solid var(--border); border-radius: var(--radius-full);
+  cursor: pointer; font-family: var(--font); font-size: 14px; font-weight:400;
+  background: var(--bg); color: var(--text-secondary);
+  transition: all 0.18s;
+}
+.repeat-tab.active {
+  border-color: var(--text-primary);
+  background: var(--text-primary); color: var(--bg-card);
+}
+
+.freq-selector {
+  display: flex; align-items: center; justify-content: center; gap: 18px;
+  padding: 10px 0;
+}
+.freq-btn {
+  width: 36px; height: 36px; border-radius: var(--radius-full);
+  border: 1.5px solid var(--border-strong); background: var(--bg);
+  cursor: pointer; font-size: 20px; font-weight:400; color: var(--text-primary);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.14s;
+}
+.freq-btn:active { background: var(--border); }
+.freq-num { font-size: 22px; font-weight:400; min-width: 36px; text-align: center; }
+.freq-label { font-size: 13px; color: var(--text-secondary); font-weight:400; }
+
+.day-boxes { display: flex; gap: 5px; margin-top: 10px; }
+.day-box {
+  flex: 1; padding: 9px 0; text-align: center;
+  border: 1.5px solid var(--border); border-radius: var(--radius-md);
+  cursor: pointer; font-family: var(--font); font-size: 11px; font-weight:400;
+  color: var(--text-secondary); background: var(--bg);
+  transition: all 0.14s; user-select: none;
+}
+.day-box.active {
+  background: var(--text-primary); color: var(--bg-card);
+  border-color: var(--text-primary);
+}
+
+/* ============================================
+   HABIT CHECKBOX
+   ============================================ */
+.habit-checkbox {
+  width: 38px; height: 38px;
+  border-radius: var(--radius-full);
+  border: 2px solid;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.18s, border-color 0.18s;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+/* checkmark SVG */
+.habit-checkbox svg {
+  width: 17px; height: 17px;
+  stroke: #fff; fill: none; stroke-width: 2.8;
+  opacity: 0; transition: opacity 0.14s;
+  position: relative; z-index: 1;
+}
+.habit-checkbox.checked svg { opacity: 1; }
+
+/* dashed = weekly non-planned day: light grey dashed border */
+.habit-checkbox.dashed {
+  border-style: dashed;
+  border-color: var(--border-dashed) !important;
+}
+/* dashed but checked: solid fill covers dashed — handled via inline style */
+.habit-checkbox.dashed.checked {
+  border-style: solid;
+}
+
+
+
+/* future: disabled look */
+.habit-checkbox.future {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+
+/* ============================================
+   TOGGLE SWITCH
+   ============================================ */
+.toggle-wrap {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 15px 0;
+}
+.toggle {
+  width: 46px; height: 27px; border-radius: 14px;
+  background: var(--border-strong); cursor: pointer;
+  position: relative; transition: background 0.22s;
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--text-primary); }
+.toggle::after {
+  content: '';
+  position: absolute; top: 3px; left: 3px;
+  width: 21px; height: 21px; border-radius: var(--radius-full);
+  background: white; transition: transform 0.22s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+}
+.toggle.on::after { transform: translateX(19px); }
+
+/* ============================================
+   DRAG HANDLE / SORT
+   ============================================ */
+.drag-handle {
+  display: flex; align-items: center;
+  color: var(--text-muted); cursor: grab; padding: 0 4px;
+}
+.drag-handle:active { cursor: grabbing; }
+.drag-handle svg { width: 20px; height: 20px; fill: currentColor; }
+
+.sortable-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+  background: var(--bg-sheet);
+  transition: box-shadow 0.14s;
+}
+.sortable-item.dragging {
+  box-shadow: 0 8px 28px var(--shadow-strong);
+  opacity: 0.96; z-index: 999;
+  border-radius: var(--radius-md);
+}
+
+/* ============================================
+   WEEK HEADER PILL ARROWS
+   ============================================ */
+.week-arrow-btn {
+  width: 34px; height: 34px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.14s;
+  -webkit-tap-highlight-color: transparent;
+}
+.week-arrow-btn:active { background: var(--border); }
+.week-arrow-btn svg {
+  width: 14px; height: 14px;
+  stroke: var(--text-primary); fill: none; stroke-width: 2.2;
+}
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<!-- ============================================
+     AUTH PAGE
+     ============================================ -->
+<div id="page-auth" style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:32px 24px;background:var(--bg);">
+
+  <!-- Logo -->
+  <div style="text-align:center;margin-bottom:40px;">
+    <div style="font-size:28px;font-weight:400;color:var(--text-primary);letter-spacing:-0.5px;">habitku</div>
+    <div style="font-size:12px;font-weight:300;color:var(--text-muted);margin-top:4px;">track your habits, mindfully</div>
+  </div>
+
+  <!-- Tab toggle: Masuk / Daftar -->
+  <div id="auth-tabs" style="display:flex;background:var(--border);border-radius:var(--radius-full);padding:3px;margin-bottom:28px;">
+    <button id="tab-masuk" onclick="switchAuthTab('masuk')"
+      style="flex:1;padding:10px;border:none;border-radius:var(--radius-full);font-family:var(--font);font-size:13px;font-weight:400;cursor:pointer;transition:all 0.2s;background:var(--bg-card);color:var(--text-primary);box-shadow:0 1px 4px var(--shadow);">
+      Masuk
+    </button>
+    <button id="tab-daftar" onclick="switchAuthTab('daftar')"
+      style="flex:1;padding:10px;border:none;border-radius:var(--radius-full);font-family:var(--font);font-size:13px;font-weight:400;cursor:pointer;transition:all 0.2s;background:transparent;color:var(--text-muted);">
+      Daftar
+    </button>
+  </div>
+
+  <!-- MASUK form -->
+  <div id="form-masuk">
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input id="masuk-email" class="form-input" type="email" placeholder="email@kamu.com" autocomplete="email">
+    </div>
+    <div class="form-group" style="position:relative;">
+      <label class="form-label">Password</label>
+      <div style="position:relative;">
+        <input id="masuk-password" class="form-input" type="password" placeholder="••••••••" autocomplete="current-password" style="padding-right:48px;">
+        <button type="button" onclick="togglePassword('masuk-password','eye-masuk')"
+          style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;color:var(--text-muted);">
+          <svg id="eye-masuk" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div style="text-align:right;margin-top:-10px;margin-bottom:20px;">
+      <button onclick="switchAuthTab('lupa')" style="background:none;border:none;font-family:var(--font);font-size:12px;font-weight:400;color:var(--text-secondary);cursor:pointer;">Lupa password?</button>
+    </div>
+    <div id="masuk-error" style="display:none;font-size:12px;color:#E53935;margin-bottom:14px;padding:10px 14px;background:rgba(229,57,53,0.08);border-radius:var(--radius-md);"></div>
+    <button onclick="handleMasuk()" id="btn-masuk" class="btn btn-primary btn-full">Masuk</button>
+  </div>
+
+  <!-- DAFTAR form -->
+  <div id="form-daftar" style="display:none;">
+    <div class="form-group">
+      <label class="form-label">Nama</label>
+      <input id="daftar-name" class="form-input" type="text" placeholder="Nama kamu" autocomplete="name">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input id="daftar-email" class="form-input" type="email" placeholder="email@kamu.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div style="position:relative;">
+        <input id="daftar-password" class="form-input" type="password" placeholder="Minimal 6 karakter" autocomplete="new-password" style="padding-right:48px;">
+        <button type="button" onclick="togglePassword('daftar-password','eye-daftar')"
+          style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;color:var(--text-muted);">
+          <svg id="eye-daftar" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div id="daftar-error" style="display:none;font-size:12px;color:#E53935;margin-bottom:14px;padding:10px 14px;background:rgba(229,57,53,0.08);border-radius:var(--radius-md);"></div>
+    <div id="daftar-success" style="display:none;font-size:12px;color:#2E7D32;margin-bottom:14px;padding:10px 14px;background:rgba(46,125,50,0.08);border-radius:var(--radius-md);"></div>
+    <button onclick="handleDaftar()" id="btn-daftar" class="btn btn-primary btn-full">Buat Akun</button>
+  </div>
+
+  <!-- LUPA PASSWORD form -->
+  <div id="form-lupa" style="display:none;">
+    <button onclick="switchAuthTab('masuk')" style="background:none;border:none;font-family:var(--font);font-size:12px;font-weight:400;color:var(--text-secondary);cursor:pointer;margin-bottom:20px;display:flex;align-items:center;gap:6px;padding:0;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      Kembali ke Masuk
+    </button>
+    <div style="font-size:14px;font-weight:400;color:var(--text-primary);margin-bottom:6px;">Lupa password?</div>
+    <div style="font-size:12px;font-weight:300;color:var(--text-muted);margin-bottom:20px;line-height:1.6;">Masukkan email kamu dan kami akan kirimkan link untuk reset password.</div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input id="lupa-email" class="form-input" type="email" placeholder="email@kamu.com" autocomplete="email">
+    </div>
+    <div id="lupa-error" style="display:none;font-size:12px;color:#E53935;margin-bottom:14px;padding:10px 14px;background:rgba(229,57,53,0.08);border-radius:var(--radius-md);"></div>
+    <div id="lupa-success" style="display:none;font-size:12px;color:#2E7D32;margin-bottom:14px;padding:10px 14px;background:rgba(46,125,50,0.08);border-radius:var(--radius-md);"></div>
+    <button onclick="handleLupa()" id="btn-lupa" class="btn btn-primary btn-full">Kirim Link Reset</button>
+  </div>
+
+  <!-- RESET PASSWORD form (muncul saat ada ?mode=reset di URL) -->
+  <div id="form-reset" style="display:none;">
+    <div style="font-size:14px;font-weight:400;color:var(--text-primary);margin-bottom:6px;">Buat password baru</div>
+    <div style="font-size:12px;font-weight:300;color:var(--text-muted);margin-bottom:20px;line-height:1.6;">Masukkan password baru kamu di bawah.</div>
+    <div class="form-group">
+      <label class="form-label">Password Baru</label>
+      <div style="position:relative;">
+        <input id="reset-password" class="form-input" type="password" placeholder="Minimal 6 karakter" style="padding-right:48px;">
+        <button type="button" onclick="togglePassword('reset-password','eye-reset')"
+          style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;color:var(--text-muted);">
+          <svg id="eye-reset" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div id="reset-error" style="display:none;font-size:12px;color:#E53935;margin-bottom:14px;padding:10px 14px;background:rgba(229,57,53,0.08);border-radius:var(--radius-md);"></div>
+    <button onclick="handleReset()" id="btn-reset-pw" class="btn btn-primary btn-full">Simpan Password Baru</button>
+  </div>
+
+  <div style="text-align:center;margin-top:32px;">
+    <div style="font-size:11px;font-weight:300;color:var(--text-muted);">habitku v1.0 · @suryaparamartha</div>
+  </div>
+</div>
+
+<!-- Loading overlay -->
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" stroke-linecap="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+  </svg>
+  <div style="font-size:13px;font-weight:300;color:var(--text-muted);" id="loading-text">Memuat data...</div>
+</div>
+
+<div id="app-shell" style="display:none;">
+
+
+<!-- ============================================
+     PAGE: BERANDA
+     ============================================ -->
+<div id="page-beranda" class="page active">
+
+  <!-- Hero -->
+  <div style="padding:32px 22px 0;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+      <div>
+        <div id="hero-hari" style="font-size:12px;font-weight:400;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.08em"></div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-top:2px;">
+          <div id="hero-tanggal" style="font-size:52px;font-weight:400;line-height:0.95;color:var(--text-primary)"></div>
+          <div id="hero-bulan-tahun" style="font-size:14px;font-weight:300;color:var(--text-secondary);line-height:1.2"></div>
+        </div>
+      </div>
+      <button id="hero-darkmode-toggle" onclick="toggleDarkMode()" style="width:42px;height:42px;border-radius:var(--radius-full);border:1px solid var(--border);background:var(--bg-card);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;margin-top:4px;">
+  <svg id="hero-dm-icon" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--text-primary);fill:none;stroke-width:1.5;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+</button>
+    </div>
+  </div>
+
+  <!-- Reflection -->
+  <div style="padding:14px 22px 0;">
+    <div class="card" style="padding:16px 18px;">
+      <div style="font-size:12px;font-weight:400;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">✦ CATATAN HARI INI</div>
+      <div id="reflection-section"></div>
+    </div>
+  </div>
+
+  <!-- Week Header -->
+  <div style="padding:16px 22px 0;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button id="btn-prev-week" class="week-arrow-btn">
+        <svg style="width:14px;height:14px;stroke:var(--text-primary);fill:none;stroke-width:2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button id="week-title-btn" style="flex:1;background:none;border:none;cursor:pointer;text-align:center;padding:0;font-family:var(--font);">
+        <div id="week-num" style="font-size:14px;font-weight:400;color:var(--text-primary)"></div>
+        <div id="week-range" style="font-size:10px;font-weight:300;color:var(--text-muted);margin-top:2px"></div>
+      </button>
+      <button id="btn-next-week" class="week-arrow-btn">
+        <svg style="width:14px;height:14px;stroke:var(--text-primary);fill:none;stroke-width:2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Habit List -->
+  <div style="padding:12px 22px 0;" id="habit-list"></div>
+  <div class="fab-row">
+    <button id="fab-sort" style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:var(--radius-full);border:1.5px solid var(--border-strong);background:var(--bg-card);color:var(--text-primary);font-family:var(--font);font-size:13px;font-weight:400;cursor:pointer;box-shadow:0 2px 8px var(--shadow);-webkit-tap-highlight-color:transparent;transition:transform 0.15s;">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+      Atur Urutan
+    </button>
+    <button id="fab-add" style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:var(--radius-full);border:none;background:var(--text-primary);color:var(--bg-card);font-family:var(--font);font-size:13px;font-weight:400;cursor:pointer;box-shadow:0 2px 10px var(--shadow-strong);-webkit-tap-highlight-color:transparent;transition:transform 0.15s;">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Tambah Habit
+    </button>
+  </div>
+
+</div><!-- /page-beranda -->
+
+
+<!-- ============================================
+     PAGE: LAPORAN
+     ============================================ -->
+<div id="page-laporan" class="page">
+  <div style="padding:24px 20px 0;">
+    <div style="font-size:18px;font-weight:400;color:var(--text-primary);margin-bottom:16px">Laporan</div>
+
+    <!-- Ringkasan -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div class="card" style="padding:14px 16px;">
+        <div id="stat-streak" style="font-size:26px;font-weight:400;color:var(--text-primary)">0</div>
+        <div style="font-size:11px;font-weight:400;color:var(--text-muted);margin-top:2px">Hari berturut</div>
+      </div>
+      <div class="card" style="padding:14px 16px;">
+        <div id="stat-rate" style="font-size:26px;font-weight:400;color:var(--text-primary)">0%</div>
+        <div style="font-size:11px;font-weight:400;color:var(--text-muted);margin-top:2px">Tingkat penyelesaian</div>
+      </div>
+      <div class="card" style="padding:14px 16px;">
+        <div id="stat-completed" style="font-size:26px;font-weight:400;color:var(--text-primary)">0</div>
+        <div style="font-size:11px;font-weight:400;color:var(--text-muted);margin-top:2px">Habit diselesaikan</div>
+      </div>
+      <div class="card" style="padding:14px 16px;">
+        <div id="stat-perfect" style="font-size:26px;font-weight:400;color:var(--text-primary)">0</div>
+        <div style="font-size:11px;font-weight:400;color:var(--text-muted);margin-top:2px">Hari sempurna</div>
+      </div>
+    </div>
+
+    <!-- Bar chart: Habit diselesaikan -->
+    <div class="card" style="padding:16px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:15px;font-weight:400;">Habit Diselesaikan</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button id="bar-prev-week" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center">
+            <svg style="width:12px;height:12px;stroke:var(--text-primary);fill:none;stroke-width:2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div id="bar-week-label" style="font-size:10px;font-weight:400;color:var(--text-secondary);min-width:110px;text-align:center;"></div>
+          <button id="bar-next-week" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center">
+            <svg style="width:12px;height:12px;stroke:var(--text-primary);fill:none;stroke-width:2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+      <svg id="bar-chart-svg" style="width:100%;overflow:visible" viewBox="0 0 340 180"></svg>
+    </div>
+
+    <!-- Line chart: Tingkat penyelesaian -->
+    <div class="card" style="padding:16px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:15px;font-weight:400;">Rasio Penyelesaian</div>
+                <select id="rate-filter-select" style="font-family:var(--font);font-size:11px;font-weight:400;color:var(--text-secondary);background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-full);padding:5px 28px 5px 12px;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23999%22 stroke-width=%222%22><polyline points=%2218 9 12 15 6 9%22/></svg>');background-repeat:no-repeat;background-position:right 8px center;background-size:12px;">
+          <option value="3">3 Bulan Terakhir</option>
+          <option value="6" selected>6 Bulan Terakhir</option>
+          <option value="12">1 Tahun Terakhir</option>
+        </select>
+      </div>
+      <svg id="line-chart-svg" style="width:100%;overflow:visible" viewBox="0 0 340 180"></svg>
+    </div>
+
+    <!-- Calendar Stats -->
+    <div class="card" style="padding:16px;margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:400;margin-bottom:14px;">Statistik Kalender</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <button id="cal-prev" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+          <svg style="width:14px;height:14px;stroke:var(--text-primary);fill:none;stroke-width:2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div id="cal-month-label" style="font-size:14px;font-weight:400;cursor:pointer;"></div>
+        <button id="cal-next" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+          <svg style="width:14px;height:14px;stroke:var(--text-primary);fill:none;stroke-width:2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;"></div>
+    </div>
+
+
+    <!-- Catatan Refleksi -->
+    <div class="card" style="padding:16px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="font-size:15px;font-weight:400;">Catatan Refleksi</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button id="ref-prev-week" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+            <svg style="width:12px;height:12px;stroke:var(--text-primary);fill:none;stroke-width:2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div id="ref-week-label" style="font-size:11px;font-weight:400;color:var(--text-secondary);min-width:110px;text-align:center;"></div>
+          <button id="ref-next-week" style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+            <svg style="width:12px;height:12px;stroke:var(--text-primary);fill:none;stroke-width:2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="ref-list"></div>
+    </div>
+
+  </div>
+</div><!-- /page-laporan -->
+
+
+<!-- ============================================
+     PAGE: PROFIL
+     ============================================ -->
+<div id="page-profil" class="page">
+  <div style="padding:24px 20px 0;">
+
+    <!-- Header profil -->
+    <div class="card" style="padding:20px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div style="width:48px;height:48px;border-radius:50%;border:1.5px solid var(--border-strong);background:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div id="profile-name" style="font-size:16px;font-weight:400;"></div>
+            <input id="profile-name-input" class="form-input" style="display:none;font-size:15px;padding:6px 10px;height:auto;">
+            <button id="btn-edit-name" class="btn btn-secondary btn-sm" style="padding:6px 10px;">
+              <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.5" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button id="btn-save-name" class="btn btn-primary btn-sm" style="display:none;padding:6px 12px;">Simpan</button>
+          </div>
+          <div id="profile-email" style="font-size:12px;color:var(--text-muted);margin-top:2px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="card" style="padding:0 16px;margin-bottom:16px;">
+      <!-- Habit diarsipkan -->
+      <button id="btn-archived" style="width:100%;background:none;border:none;cursor:pointer;padding:14px 0;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);font-family:var(--font);">
+        <div style="text-align:left;">
+          <div style="font-size:14px;font-weight:400;color:var(--text-primary);">Habit Diarsipkan</div>
+          <div style="font-size:11px;color:var(--text-muted);">Kelola habit yang sudah diarsipkan</div>
+        </div>
+        <svg style="width:16px;height:16px;stroke:var(--text-muted);fill:none;stroke-width:2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+
+      <!-- Reset -->
+      <button id="btn-reset" style="width:100%;background:none;border:none;cursor:pointer;padding:14px 0;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);font-family:var(--font);">
+        <div style="text-align:left;">
+          <div style="font-size:14px;font-weight:400;color:var(--text-primary);">Reset</div>
+          <div style="font-size:11px;font-weight:300;color:var(--text-muted);">Hapus semua data</div>
+        </div>
+        <svg style="width:16px;height:16px;stroke:var(--text-muted);fill:none;stroke-width:1.8" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </button>
+
+      <!-- Logout -->
+      <button id="btn-logout" style="width:100%;background:none;border:none;cursor:pointer;padding:14px 0;display:flex;align-items:center;justify-content:space-between;font-family:var(--font);">
+        <div style="font-size:14px;font-weight:400;color:#E53935;">Keluar</div>
+        <svg style="width:16px;height:16px;stroke:#E53935;fill:none;stroke-width:1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+
+    <div style="text-align:center;color:var(--text-muted);font-size:11px;font-weight:400;padding:8px 0">
+      habitku v1.0 · mindfully designed &amp; built by @suryaparamartha
+    </div>
+  </div>
+</div><!-- /page-profil -->
+
+
+<!-- ============================================
+     BOTTOM NAV
+     ============================================ -->
+<nav class="bottom-nav">
+  <button class="nav-item active" data-page="beranda">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Beranda
+  </button>
+  <button class="nav-item" data-page="laporan">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Laporan
+  </button>
+  <button class="nav-item" data-page="profil">
+    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Profil
+  </button>
+</nav>
+
+
+
+
+
+<!-- ============================================
+     BOTTOM SHEET: TAMBAH / EDIT HABIT
+     ============================================ -->
+<div class="sheet-overlay" id="overlay-add-habit" onclick="closeSheet('add-habit')"></div>
+<div class="sheet" id="sheet-add-habit">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div id="sheet-add-title" class="sheet-title">Buat Habit Baru</div>
+    <button onclick="closeSheet('add-habit')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body">
+    <div id="habit-form-container"></div>
+    <!-- Create button -->
+    <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;">
+      <button id="btn-create-habit" class="btn btn-primary btn-full">Buat Habit Baru</button>
+    </div>
+    <!-- Edit buttons -->
+    <div id="btn-edit-actions" style="display:none;margin-top:8px;border-top:1px solid var(--border);padding-top:16px;">
+      <button id="btn-save-habit" class="btn btn-primary btn-full" style="margin-bottom:10px">Simpan</button>
+      <button id="btn-archive-habit" class="btn btn-secondary btn-full">Arsipkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     BOTTOM SHEET: ATUR URUTAN
+     ============================================ -->
+<div class="sheet-overlay" id="overlay-sort" onclick="closeSheet('sort')"></div>
+<div class="sheet" id="sheet-sort">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">Atur Urutan Habit</div>
+    <button onclick="closeSheet('sort')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body">
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Seret dan lepas untuk mengatur urutan tampilan.</div>
+    <div id="sort-list"></div>
+    <button id="btn-save-sort" class="btn btn-primary btn-full" style="margin-top:20px">Simpan Urutan</button>
+  </div>
+</div>
+
+<!-- ============================================
+     BOTTOM SHEET: DETAIL HARI (Laporan kalender)
+     ============================================ -->
+<div class="sheet-overlay" id="overlay-day-detail" onclick="closeSheet('day-detail')"></div>
+<div class="sheet" id="sheet-day-detail">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div id="day-detail-title" class="sheet-title"></div>
+    <button onclick="closeSheet('day-detail')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body">
+    <div id="day-reflection" style="margin-bottom:20px;"></div>
+    <div id="day-habit-list"></div>
+  </div>
+</div>
+
+<!-- ============================================
+     BOTTOM SHEET: EDIT REFLEKSI HARIAN
+     ============================================ -->
+<div class="sheet-overlay" id="overlay-ref-edit" onclick="closeSheet('ref-edit')"></div>
+<div class="sheet" id="sheet-ref-edit">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div id="ref-edit-title" class="sheet-title"></div>
+    <button onclick="closeSheet('ref-edit')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body">
+    <div class="form-group">
+      <label class="form-label">Catatan Refleksi</label>
+      <textarea id="ref-edit-input" class="form-input" rows="4" placeholder="Satu kalimat untuk hari ini" style="border-radius:16px;resize:none;line-height:1.6;font-size:13px;"></textarea>
+    </div>
+    <button id="btn-save-ref-edit" class="btn btn-primary btn-full">Simpan</button>
+  </div>
+</div>
+
+<!-- ============================================
+     BOTTOM SHEET: HABIT DIARSIPKAN
+     ============================================ -->
+<div class="sheet-overlay" id="overlay-archived" onclick="closeSheet('archived')"></div>
+<div class="sheet" id="sheet-archived">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">Habit Diarsipkan</div>
+    <button onclick="closeSheet('archived')" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body">
+    <div id="archived-list"></div>
+  </div>
+</div>
+
+
+<!-- ============================================
+     SCRIPTS
+     ============================================ -->
+
+<!-- ============================================
+     MODAL: DATE PICKER (Beranda - pilih minggu)
+     ============================================ -->
+<div id="modal-datepicker-overlay" style="display:none;position:fixed;inset:0;background:var(--overlay);z-index:300;align-items:center;justify-content:center;">
+  <div style="background:var(--bg-card);border-radius:20px;padding:0;width:calc(100% - 48px);max-width:360px;margin:0 auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);overflow:hidden;">
+    <!-- Header: month nav -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;">
+      <button id="dp-prev-month" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div id="dp-month-label" style="font-size:14px;font-weight:400;color:var(--text-primary);cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-strong);"></div>
+      <button id="dp-next-month" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <!-- Day headers -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);padding:0 12px;gap:2px;margin-bottom:4px;">
+      <div style="text-align:center;font-size:10px;font-weight:400;color:var(--text-muted);padding:4px 0;">Sen</div>
+      <div style="text-align:center;font-size:10px;font-weight:400;color:var(--text-muted);padding:4px 0;">Sel</div>
+      <div style="text-align:center;font-size:10px;font-weight:400;color:var(--text-muted);padding:4px 0;">Rab</div>
+      <div style="text-align:center;font-size:10px;font-weight:400;color:var(--text-muted);padding:4px 0;">Kam</div>
+      <div style="text-align:center;font-size:10px;font-weight:400;color:var(--text-muted);padding:4px 0;">Jum</div>
+      <div style="text-align:center;font-size:10px;font-weight:400;color:var(--text-muted);padding:4px 0;">Sab</div>
+      <div style="text-align:center;font-size:10px;font-weight:400;color:var(--text-muted);padding:4px 0;">Min</div>
+    </div>
+    <!-- Month+Year picker panel (hidden by default) -->
+    <div id="dp-my-panel" style="display:none;padding:0 12px 16px;height:244px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 8px;">
+        <button id="dp-my-prev-year" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div id="dp-my-year-label" style="font-size:13px;font-weight:400;color:var(--text-primary);"></div>
+        <button id="dp-my-next-year" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div id="dp-my-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 8px;"></div>
+    </div>
+    <!-- Date grid -->
+    <div id="dp-grid" style="display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(6,36px);padding:0 12px 16px;gap:2px;height:244px;align-content:start;"></div>
+    <!-- Cancel -->
+    <div style="border-top:1px solid var(--border);padding:12px 20px;">
+      <button id="dp-cancel" class="btn btn-secondary btn-full" style="padding:11px;">Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     MODAL: MONTH PICKER (Laporan - pilih bulan kalender)
+     ============================================ -->
+<div id="modal-monthpicker-overlay" style="display:none;position:fixed;inset:0;background:var(--overlay);z-index:300;align-items:center;justify-content:center;">
+  <div style="background:var(--bg-card);border-radius:20px;padding:0;width:calc(100% - 48px);max-width:320px;margin:0 auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 16px;">
+      <button id="mp-prev-year" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div id="mp-year-label" style="font-size:14px;font-weight:400;color:var(--text-primary);"></div>
+      <button id="mp-next-year" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <div id="mp-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px 20px;"></div>
+    <div style="border-top:1px solid var(--border);padding:12px 20px;">
+      <button id="mp-cancel" class="btn btn-secondary btn-full" style="padding:11px;">Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     MODAL: KONFIRMASI ARSIPKAN
+     ============================================ -->
+<div id="modal-archive-overlay" style="display:none;position:fixed;inset:0;background:var(--overlay);z-index:300;align-items:center;justify-content:center;">
+  <div style="background:var(--bg-card);border-radius:20px;padding:28px 24px;width:calc(100% - 64px);max-width:340px;margin:0 auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div style="font-size:15px;font-weight:400;color:var(--text-primary);margin-bottom:8px;">Arsipkan habit ini?</div>
+    <div style="font-size:12px;font-weight:300;color:var(--text-muted);margin-bottom:24px;line-height:1.6;">Habit akan disembunyikan dari beranda. Data checklist tetap tersimpan dan habit bisa dipulihkan kapan saja.</div>
+    <div style="display:flex;gap:10px;">
+      <button id="modal-archive-cancel" class="btn btn-secondary" style="flex:1;padding:12px;">Batal</button>
+      <button id="modal-archive-confirm" class="btn btn-primary" style="flex:1;padding:12px;">Arsipkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     MODAL: KONFIRMASI HAPUS PERMANEN
+     ============================================ -->
+<div id="modal-delete-overlay" style="display:none;position:fixed;inset:0;background:var(--overlay);z-index:300;align-items:center;justify-content:center;">
+  <div style="background:var(--bg-card);border-radius:20px;padding:28px 24px;width:calc(100% - 64px);max-width:340px;margin:0 auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div style="font-size:15px;font-weight:400;color:var(--text-primary);margin-bottom:8px;">Hapus permanen?</div>
+    <div id="modal-delete-desc" style="font-size:12px;font-weight:300;color:var(--text-muted);margin-bottom:24px;line-height:1.6;"></div>
+    <div style="display:flex;gap:10px;">
+      <button id="modal-delete-cancel" class="btn btn-secondary" style="flex:1;padding:12px;">Batal</button>
+      <button id="modal-delete-confirm" class="btn" style="flex:1;padding:12px;background:#E53935;color:#fff;">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     MODAL: KONFIRMASI RESET
+     ============================================ -->
+<div id="modal-reset-overlay" style="display:none;position:fixed;inset:0;background:var(--overlay);z-index:300;align-items:center;justify-content:center;">
+  <div style="background:var(--bg-card);border-radius:20px;padding:28px 24px;width:calc(100% - 64px);max-width:340px;margin:0 auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div style="font-size:15px;font-weight:400;color:var(--text-primary);margin-bottom:8px;">Hapus semua data?</div>
+    <div style="font-size:12px;font-weight:300;color:var(--text-muted);margin-bottom:24px;line-height:1.6;">Semua habit, catatan, dan histori akan dihapus permanen dan tidak bisa dipulihkan.</div>
+    <div style="display:flex;gap:10px;">
+      <button id="modal-reset-cancel" class="btn btn-secondary" style="flex:1;padding:12px;">Batal</button>
+      <button id="modal-reset-confirm" class="btn" style="flex:1;padding:12px;background:#E53935;color:#fff;">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================
+// HABITKU — DATA LAYER (localStorage)
+// ============================================
+
+// ============================================
+// SUPABASE CONFIG — ganti dengan nilai dari project kamu
+// ============================================
+const SUPABASE_URL  = 'https://lmnjckyxvvgjrlkczmuo.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxtbmpja3l4dnZnanJsa2N6bXVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzE2MzgsImV4cCI6MjA5NTgwNzYzOH0.NnW8KqOK-yXKt3q3Pi6OjFx6izJgujBm1dSPGn3xKyw';
+
+// Load Supabase client (loaded via CDN in <head>)
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ============================================
+// AUTH HELPERS
+// ============================================
+let _currentUser = null;
+
+async function authSignUp(email, password, name) {
+  const { data, error } = await _sb.auth.signUp({
+    email, password,
+    options: { data: { name } }
+  });
+  return { data, error };
+}
+
+async function authSignIn(email, password) {
+  const { data, error } = await _sb.auth.signInWithPassword({ email, password });
+  return { data, error };
+}
+
+async function authSignOut() {
+  await _sb.auth.signOut();
+  _currentUser = null;
+}
+
+async function authForgotPassword(email) {
+  const redirectUrl = window.location.origin + window.location.pathname + '?mode=reset';
+  const { data, error } = await _sb.auth.resetPasswordForEmail(email, {
+    redirectTo: redirectUrl
+  });
+  return { data, error };
+}
+
+async function authUpdatePassword(newPassword) {
+  const { data, error } = await _sb.auth.updateUser({ password: newPassword });
+  return { data, error };
+}
+
+function getUser() { return _currentUser; }
+
+// ============================================
+// DB — Supabase async data layer
+// ============================================
+const DB = {
+  // ── HABITS ──────────────────────────────────────────────
+  _habits: null, // in-memory cache
+
+  async loadHabits() {
+    const uid = _currentUser?.id;
+    if (!uid) return [];
+    const { data, error } = await _sb.from('habits').select('*').eq('user_id', uid).order('order_index');
+    if (error) { console.error('loadHabits:', error); return []; }
+    this._habits = (data || []).map(r => ({
+      id: r.id,
+      name: r.name,
+      emoji: r.emoji,
+      color: r.color,
+      repeat: r.repeat,
+      weeklyTimes: r.weekly_times,
+      weeklyDays: r.weekly_days || [],
+      order: r.order_index,
+      createdAt: r.created_at_date,
+      archived: r.archived,
+      archivedAt: r.archived_at,
+      recoveredAt: r.recovered_at,
+    }));
+    return this._habits;
+  },
+
+  getHabits() { return this._habits || []; },
+  getActiveHabits() { return this.getHabits().filter(h => !h.archived).sort((a,b) => a.order - b.order); },
+  getArchivedHabits() { return this.getHabits().filter(h => h.archived).sort((a,b) => a.order - b.order); },
+
+  async addHabit(habit) {
+    const uid = _currentUser?.id;
+    if (!uid) return null;
+    const active = this.getActiveHabits();
+    const { data, error } = await _sb.from('habits').insert({
+      user_id: uid,
+      name: habit.name,
+      emoji: habit.emoji || '⭐',
+      color: habit.color,
+      repeat: habit.repeat,
+      weekly_times: habit.weeklyTimes || null,
+      weekly_days: habit.weeklyDays || [],
+      order_index: active.length,
+      created_at_date: todayStr(),
+      archived: false,
+      archived_at: null,
+      recovered_at: null,
+    }).select().single();
+    if (error) { console.error('addHabit:', error); return null; }
+    await this.loadHabits();
+    return data;
+  },
+
+  async updateHabit(id, updates) {
+    const uid = _currentUser?.id;
+    if (!uid) return;
+    const patch = {};
+    if (updates.name        !== undefined) patch.name         = updates.name;
+    if (updates.emoji       !== undefined) patch.emoji        = updates.emoji;
+    if (updates.color       !== undefined) patch.color        = updates.color;
+    if (updates.repeat      !== undefined) patch.repeat       = updates.repeat;
+    if (updates.weeklyTimes !== undefined) patch.weekly_times = updates.weeklyTimes;
+    if (updates.weeklyDays  !== undefined) patch.weekly_days  = updates.weeklyDays;
+    if (updates.order       !== undefined) patch.order_index  = updates.order;
+    if (updates.archived    !== undefined) patch.archived     = updates.archived;
+    if ('archivedAt'  in updates) patch.archived_at  = updates.archivedAt;
+    if ('recoveredAt' in updates) patch.recovered_at = updates.recoveredAt;
+    const { error } = await _sb.from('habits').update(patch).eq('id', id).eq('user_id', uid);
+    if (error) console.error('updateHabit:', error);
+    await this.loadHabits();
+  },
+
+  async deleteHabit(id) {
+    const uid = _currentUser?.id;
+    if (!uid) return;
+    await _sb.from('habit_logs').delete().eq('habit_id', id).eq('user_id', uid);
+    await _sb.from('habits').delete().eq('id', id).eq('user_id', uid);
+    await this.loadHabits();
+  },
+
+  // ── LOGS ────────────────────────────────────────────────
+  _logs: {}, // { "YYYY-MM-DD": { "habit_id": true/false } }
+
+  async loadLogs() {
+    const uid = _currentUser?.id;
+    if (!uid) return;
+    const { data, error } = await _sb.from('habit_logs').select('*').eq('user_id', uid);
+    if (error) { console.error('loadLogs:', error); return; }
+    this._logs = {};
+    for (const r of (data || [])) {
+      if (!this._logs[r.log_date]) this._logs[r.log_date] = {};
+      this._logs[r.log_date][r.habit_id] = r.checked;
+    }
+  },
+
+  getLogs()             { return this._logs; },
+  getLog(dateStr)       { return this._logs[dateStr] || {}; },
+  getCheck(dateStr, habitId) { return !!(this._logs[dateStr]?.[habitId]); },
+
+  async setCheck(dateStr, habitId, checked) {
+    const uid = _currentUser?.id;
+    if (!uid) return;
+    // Upsert
+    const { error } = await _sb.from('habit_logs').upsert({
+      user_id: uid,
+      habit_id: habitId,
+      log_date: dateStr,
+      checked,
+    }, { onConflict: 'user_id,habit_id,log_date' });
+    if (error) { console.error('setCheck:', error); return; }
+    if (!this._logs[dateStr]) this._logs[dateStr] = {};
+    this._logs[dateStr][habitId] = checked;
+  },
+
+  // ── REFLECTIONS ─────────────────────────────────────────
+  _reflections: {}, // { "YYYY-MM-DD": "text" }
+
+  async loadReflections() {
+    const uid = _currentUser?.id;
+    if (!uid) return;
+    const { data, error } = await _sb.from('reflections').select('*').eq('user_id', uid);
+    if (error) { console.error('loadReflections:', error); return; }
+    this._reflections = {};
+    for (const r of (data || [])) {
+      this._reflections[r.reflection_date] = r.content;
+    }
+  },
+
+  getReflections()          { return this._reflections; },
+  getReflection(dateStr)    { return this._reflections[dateStr] || ''; },
+
+  async setReflection(dateStr, text) {
+    const uid = _currentUser?.id;
+    if (!uid) return;
+    if (text) {
+      const { error } = await _sb.from('reflections').upsert({
+        user_id: uid,
+        reflection_date: dateStr,
+        content: text,
+      }, { onConflict: 'user_id,reflection_date' });
+      if (error) { console.error('setReflection:', error); return; }
+      this._reflections[dateStr] = text;
+    } else {
+      // Delete if empty
+      await _sb.from('reflections').delete().eq('user_id', uid).eq('reflection_date', dateStr);
+      delete this._reflections[dateStr];
+    }
+  },
+
+  // ── PROFILE ─────────────────────────────────────────────
+  _profile: null,
+
+  async loadProfile() {
+    const uid = _currentUser?.id;
+    if (!uid) return;
+    const { data, error } = await _sb.from('profiles').select('*').eq('id', uid).single();
+    if (error && error.code !== 'PGRST116') { console.error('loadProfile:', error); return; }
+    this._profile = data ? {
+      name: data.name || 'Pengguna',
+      email: _currentUser.email,
+      darkMode: data.dark_mode || false,
+    } : {
+      name: _currentUser.user_metadata?.name || 'Pengguna',
+      email: _currentUser.email,
+      darkMode: false,
+    };
+  },
+
+  getProfile()  { return this._profile || { name: 'Pengguna', email: '', darkMode: false }; },
+
+  async saveProfile(p) {
+    const uid = _currentUser?.id;
+    if (!uid) return;
+    const { error } = await _sb.from('profiles').upsert({
+      id: uid,
+      name: p.name,
+      dark_mode: p.darkMode,
+    }, { onConflict: 'id' });
+    if (error) console.error('saveProfile:', error);
+    this._profile = { ...this._profile, ...p };
+  },
+
+  // ── RESET ALL USER DATA ─────────────────────────────────
+  async resetAllData() {
+    const uid = _currentUser?.id;
+    if (!uid) return;
+    await Promise.all([
+      _sb.from('habit_logs').delete().eq('user_id', uid),
+      _sb.from('reflections').delete().eq('user_id', uid),
+      _sb.from('habits').delete().eq('user_id', uid),
+    ]);
+    this._habits = [];
+    this._logs = {};
+    this._reflections = {};
+  },
+};
+
+// ============================================
+// LOAD ALL USER DATA
+// ============================================
+async function loadAllData() {
+  await Promise.all([
+    DB.loadHabits(),
+    DB.loadLogs(),
+    DB.loadReflections(),
+    DB.loadProfile(),
+  ]);
+}
+;
+
+// ============================================
+// DATE UTILITIES
+// ============================================
+
+function todayStr() {
+  return dateToStr(new Date());
+}
+
+function dateToStr(d) {
+  // Returns YYYY-MM-DD in local time
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function strToDate(s) {
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
+function isFuture(dateStr) {
+  return dateStr > todayStr();
+}
+
+function isPast(dateStr) {
+  return dateStr < todayStr();
+}
+
+function isToday(dateStr) {
+  return dateStr === todayStr();
+}
+
+// Get Monday of the week containing the date
+function getMondayOfWeek(d) {
+  const date = new Date(d);
+  const day = date.getDay(); // 0=Sun
+  const diff = (day === 0) ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  return date;
+}
+
+// Get week number (ISO-ish: Mon-based)
+function getFirstMondayOfYear(year) {
+  // First Monday of January of given year
+  const jan1 = new Date(year, 0, 1);
+  const dow = jan1.getDay(); // 0=Sun
+  const daysUntilMon = dow === 0 ? 1 : dow === 1 ? 0 : 8 - dow;
+  return new Date(year, 0, 1 + daysUntilMon);
+}
+
+function getWeekInfo(mondayDate) {
+  const sunday = new Date(mondayDate);
+  sunday.setDate(sunday.getDate() + 6);
+
+  // Try sunday's year first, fall back to monday's year if week <= 0
+  for (const year of [sunday.getFullYear(), mondayDate.getFullYear()]) {
+    const firstMon = getFirstMondayOfYear(year);
+    const diff = mondayDate - firstMon;
+    const weekNum = Math.floor(diff / (7 * 86400000)) + 1;
+    if (weekNum > 0) return { week: weekNum, year };
+  }
+  return { week: 1, year: mondayDate.getFullYear() };
+}
+
+function getWeekNumber(d) {
+  // Legacy: returns week number based on Monday date
+  return getWeekInfo(d).week;
+}
+
+function getDaysOfWeek(mondayDate) {
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(mondayDate);
+    d.setDate(d.getDate() + i);
+    days.push(d);
+  }
+  return days;
+}
+
+const HARI_SHORT = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+const HARI_FULL  = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
+const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+function formatTanggal(d) {
+  const hari = HARI_FULL[d.getDay() === 0 ? 6 : d.getDay() - 1];
+  return `${hari}, ${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function formatRangeWeek(mondayDate) {
+  const sunday = new Date(mondayDate);
+  sunday.setDate(sunday.getDate() + 6);
+  const sameMonth = mondayDate.getMonth() === sunday.getMonth();
+  const sameYear  = mondayDate.getFullYear() === sunday.getFullYear();
+  if (sameMonth) {
+    // Same month: "25 – 31 Mei 2026"
+    return `${mondayDate.getDate()} – ${sunday.getDate()} ${BULAN[sunday.getMonth()]} ${sunday.getFullYear()}`;
+  } else if (sameYear) {
+    // Different month, same year: "29 Des – 4 Jan 2026" — wait, same year means Dec→Jan impossible
+    // This branch = e.g. "31 Jan – 6 Feb 2026"
+    return `${mondayDate.getDate()} ${BULAN[mondayDate.getMonth()]} – ${sunday.getDate()} ${BULAN[sunday.getMonth()]} ${sunday.getFullYear()}`;
+  } else {
+    // Cross-year: always show year of Sunday (the newer year)
+    // e.g. "29 Des – 4 Jan 2026"
+    return `${mondayDate.getDate()} ${BULAN[mondayDate.getMonth()]} – ${sunday.getDate()} ${BULAN[sunday.getMonth()]} ${sunday.getFullYear()}`;
+  }
+}
+
+// ============================================
+// HABIT LOGIC
+// ============================================
+
+const HABIT_COLORS = [
+  // Row 1: warm tones
+  '#E53935','#FB8C00','#FDD835','#C6E03A','#7CB342','#2E7D32',
+  // Row 2: cool tones
+  '#00ACC1','#1E88E5','#3949AB','#5E35B1','#D81B60','#F06292',
+  // Row 3: earth + neutral (dark/light grey always last)
+  '#FF7043','#8D6E63','#EC407A','#26A69A','#424242','#9E9E9E'
+];
+
+// Is this habit active on a given date?
+function habitActiveOnDate(habit, dateStr) {
+  // For BERANDA: habit shows if not archived and date is within active range
+  if (dateStr < habit.createdAt) return false;
+  if (habit.archived) return false;
+  return true;
+}
+
+function habitExistsOnDate(habit, dateStr) {
+  // For KALENDER: habit shows historical data regardless of archived state
+  // Active from createdAt; if archived, only up to archivedAt
+  if (dateStr < habit.createdAt) return false;
+  if (habit.archived && habit.archivedAt && dateStr > habit.archivedAt) return false;
+  return true;
+}
+
+// For a given date, should this habit's checkbox be shown?
+// Returns: 'daily' | 'planned' | 'bonus' | null
+// planned = weekly, this day is in plan; bonus = weekly, day not in plan
+function habitCheckboxType(habit, dateStr) {
+  if (!habitActiveOnDate(habit, dateStr)) return null;
+  if (habit.repeat === 'daily') return 'daily';
+  // weekly
+  const d = strToDate(dateStr);
+  const dow = d.getDay() === 0 ? 6 : d.getDay() - 1; // 0=Mon..6=Sun
+  const planned = (habit.weeklyDays || []).includes(dow);
+  return planned ? 'planned' : 'bonus';
+}
+
+// Completion for a date: checks if all expected habits are done
+function getDayCompletion(dateStr) {
+  // Use ALL habits (including archived) but check habitExistsOnDate for historical accuracy
+  const habits = DB.getHabits().filter(h => !h.archived || (h.archivedAt && dateStr <= h.archivedAt));
+  const log = DB.getLog(dateStr);
+  let total = 0, done = 0;
+  for (const h of habits) {
+    if (!habitExistsOnDate(h, dateStr)) continue;
+    if (h.repeat === 'daily') {
+      total++;
+      if (log[h.id]) done++;
+    } else {
+      const type = habitCheckboxType(h, dateStr);
+      if (type === 'planned') {
+        total++;
+        if (log[h.id]) done++;
+      }
+    }
+  }
+  // Reflection counts as 1 task
+  total++;
+  if (DB.getReflection(dateStr)) done++;
+  return { total, done, pct: total > 0 ? done / total : 0 };
+}
+
+// Perfect day: all daily + all planned weekly checked
+function isPerfectDay(dateStr) {
+  const { total, done } = getDayCompletion(dateStr);
+  return total > 0 && done === total;
+}
+
+// Current streak: consecutive days ending today where completion > 0
+function getCurrentStreak() {
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; i < 3650; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const ds = dateToStr(d);
+    const { total, done } = getDayCompletion(ds);
+    const anyHabitActive = DB.getHabits().some(h => habitExistsOnDate(h, ds));
+    // Skip today if no progress yet (don't break streak)
+    if (i === 0 && done === 0) continue;
+    // Count day if at least 1 task done and there were active habits
+    if (anyHabitActive && done > 0) streak++;
+    else if (i > 0) break;
+  }
+  return streak;
+}
+
+// All-time completion rate
+function getOverallCompletionRate() {
+  // Only count dates where at least 1 habit was active
+  // (avoids polluting rate with dates that only have orphaned log entries)
+  const logDates = Object.keys(DB.getLogs());
+  const refDates = Object.keys(DB.getReflections());
+  const dates = [...new Set([...logDates, ...refDates])].sort();
+  if (dates.length === 0) return 0;
+  const today = todayStr();
+  let totalExpected = 0, totalDone = 0;
+  for (const ds of dates) {
+    if (ds > today) continue;
+    const { total, done } = getDayCompletion(ds);
+    // Skip days with no active habits (only orphaned logs or future dates)
+    // total always >= 1 because of reflection, so check if any habit was active
+    const anyHabitActive = DB.getHabits().some(h => habitExistsOnDate(h, ds));
+    if (!anyHabitActive) continue;
+    totalExpected += total;
+    totalDone += done;
+  }
+  return totalExpected > 0 ? Math.round((totalDone / totalExpected) * 100) : 0;
+}
+
+// Total habits completed (all time)
+function getTotalHabitsCompleted() {
+  const logs = DB.getLogs();
+  let total = 0;
+  for (const date in logs) {
+    for (const hid in logs[date]) {
+      if (logs[date][hid]) total++;
+    }
+  }
+  return total;
+}
+
+// Total perfect days
+function getTotalPerfectDays() {
+  const logDates = Object.keys(DB.getLogs());
+  const refDates = Object.keys(DB.getReflections());
+  const dates = [...new Set([...logDates, ...refDates])];
+  const today = todayStr();
+  let count = 0;
+  for (const ds of dates) {
+    if (ds > today) continue;
+    const anyHabitActive = DB.getHabits().some(h => habitExistsOnDate(h, ds));
+    if (!anyHabitActive) continue;
+    if (isPerfectDay(ds)) count++;
+  }
+  return count;
+}
+
+// Weekly habits completed per day (for bar chart)
+function getWeeklyBarData(mondayDate) {
+  const days = getDaysOfWeek(mondayDate);
+  return days.map(d => {
+    const ds = dateToStr(d);
+    const log = DB.getLog(ds);
+    let count = 0;
+    for (const hid in log) { if (log[hid]) count++; }
+    return { date: d, dateStr: ds, count };
+  });
+}
+
+// Monthly completion rate for line chart
+function getMonthlyRateData(months) {
+  const result = [];
+  const today = new Date();
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const year = d.getFullYear(), month = d.getMonth();
+    let totalExp = 0, totalDone = 0;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let day = 1; day <= daysInMonth; day++) {
+      const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      if (ds > todayStr()) continue;
+      const { total, done } = getDayCompletion(ds);
+      totalExp += total; totalDone += done;
+    }
+    result.push({
+      label: BULAN[month].slice(0,3),
+      pct: totalExp > 0 ? Math.round((totalDone / totalExp) * 100) : 0
+    });
+  }
+  return result;
+}
+// ============================================
+// BOTTOM SHEET ENGINE
+// ============================================
+
+const sheets = {}; // id -> { overlay, sheet }
+
+function registerSheet(id) {
+  sheets[id] = {
+    overlay: document.getElementById(`overlay-${id}`),
+    sheet:   document.getElementById(`sheet-${id}`),
+  };
+}
+
+function openSheet(id) {
+  const s = sheets[id];
+  if (!s) return;
+  s.overlay.classList.add('open');
+  s.sheet.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSheet(id) {
+  const s = sheets[id];
+  if (!s) return;
+  s.overlay.classList.remove('open');
+  s.sheet.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeAllSheets() {
+  for (const id in sheets) closeSheet(id);
+}
+
+// ============================================
+// EMOJI PICKER DATA
+// ============================================
+const EMOJIS = [
+  // Wajah & ekspresi
+  '😀','😎','🤩','🥳','😤','🤔','😴','🥱','😇','🤯',
+  // Tubuh & gestur
+  '💪','🧠','👀','👋','🤝','✌️','🫶','👍','🙌','🫡',
+  // Simbol & status
+  '❤️','⭐','🔥','✅','❌','⚡','💯','🎯','🏆','💡',
+  // Benda & aktivitas
+  '📚','✏️','🖊️','📝','📖','🔑','💼','🎨','🎵','🎮',
+  // Olahraga
+  '⚽','🏀','🏋️','🧘','🚴','🏊','🏃','🧗','🤸','🥊',
+  // Alam & makhluk
+  '🌱','🌸','🌺','🌻','🌈','🌍','🦋','🐉','🐶','🐱',
+  '🦁','🐻','🦊','🐸','🐝','🌿','🍀','🌙','☀️','❄️',
+  // Makanan & minuman
+  '🍎','💧','☕','🍕','🍣','🥗','🥑','🍓','🧃','🍵',
+  // Lainnya
+  '💰','📈','🎂','🎁','🚀','💎','🎉','🪄','🧲','🔮',
+  // Musik
+  '🎸','🥁','🎹','🎤','🎻','🎺','🎷','🪗','🪘','🎼',
+  // Circle emoji
+  '🔴','🟠','🟡','🟢','🔵','🟣','🟤','⚫','⚪','🔘',
+];
+
+// ============================================
+// HABIT FORM BUILDER
+// ============================================
+
+function buildHabitForm(containerId, mode = 'create', habitData = {}) {
+  const container = document.getElementById(containerId);
+  const emoji  = habitData.emoji  || '⭐';
+  const name   = habitData.name   || '';
+  const color  = habitData.color  || HABIT_COLORS[6]; // biru default
+  const repeat = habitData.repeat || 'daily';
+  const weeklyTimes = habitData.weeklyTimes || 3;
+  const weeklyDays  = habitData.weeklyDays  || [0,1,2];
+
+  container.innerHTML = `
+    <!-- Emoji + Nama -->
+    <div class="form-group">
+      <label class="form-label">Nama Habit</label>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="emoji-btn" id="${containerId}-emojibtn" type="button" style="flex-shrink:0;">${emoji}</button>
+        <input class="form-input" style="flex:1;min-width:0;" id="${containerId}-name" placeholder="Nama habit..." value="${name}">
+      </div>
+      <div id="${containerId}-emojipicker" style="display:none; margin-top:10px;">
+        <div class="emoji-grid" id="${containerId}-emojigrid"></div>
+      </div>
+    </div>
+
+    <!-- Warna -->
+    <div class="form-group">
+      <label class="form-label">Warna</label>
+      <div class="color-grid" id="${containerId}-colorgrid"></div>
+    </div>
+
+    <!-- Pengulangan -->
+    <div class="form-group">
+      <label class="form-label">Pengulangan</label>
+      <div class="repeat-tabs">
+        <button class="repeat-tab ${repeat==='daily'?'active':''}" data-repeat="daily" type="button">Harian</button>
+        <button class="repeat-tab ${repeat==='weekly'?'active':''}" data-repeat="weekly" type="button">Mingguan</button>
+      </div>
+    </div>
+
+    <!-- Weekly options -->
+    <div id="${containerId}-weekly" class="form-group" style="${repeat==='weekly'?'':'display:none'}">
+      <label class="form-label">Berapa kali per minggu?</label>
+      <div class="freq-selector">
+        <button class="freq-btn" id="${containerId}-freqminus" type="button">−</button>
+        <div>
+          <div class="freq-num" id="${containerId}-freqnum">${weeklyTimes}</div>
+        </div>
+        <button class="freq-btn" id="${containerId}-freqplus" type="button">+</button>
+        <div class="freq-label">kali/minggu</div>
+      </div>
+      <label class="form-label mt-12">Hari rencana</label>
+      <div class="day-boxes" id="${containerId}-dayboxes">
+        ${HARI_SHORT.map((h,i) => `<div class="day-box ${weeklyDays.includes(i)?'active':''}" data-day="${i}">${h}</div>`).join('')}
+      </div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">Pilih tepat <span id="${containerId}-daycount">${weeklyTimes}</span> hari</div>
+    </div>
+  `;
+
+  // --- Emoji picker ---
+  const emojibtn = document.getElementById(`${containerId}-emojibtn`);
+  const emojipicker = document.getElementById(`${containerId}-emojipicker`);
+  const emojigrid   = document.getElementById(`${containerId}-emojigrid`);
+
+  EMOJIS.forEach(e => {
+    const el = document.createElement('div');
+    el.className = 'emoji-option';
+    el.textContent = e;
+    el.onclick = () => {
+      emojibtn.textContent = e;
+      emojipicker.style.display = 'none';
+    };
+    emojigrid.appendChild(el);
+  });
+
+  emojibtn.onclick = () => {
+    emojipicker.style.display = emojipicker.style.display === 'none' ? 'block' : 'none';
+  };
+
+  // --- Color grid ---
+  const colorgrid = document.getElementById(`${containerId}-colorgrid`);
+  let selectedColor = color;
+  HABIT_COLORS.forEach(c => {
+    const dot = document.createElement('div');
+    dot.className = 'color-dot' + (c === color ? ' selected' : '');
+    dot.style.background = c;
+    dot.onclick = () => {
+      colorgrid.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+      dot.classList.add('selected');
+      selectedColor = c;
+    };
+    colorgrid.appendChild(dot);
+  });
+
+  // --- Repeat tabs ---
+  let currentRepeat = repeat;
+  container.querySelectorAll('.repeat-tab').forEach(tab => {
+    tab.onclick = () => {
+      container.querySelectorAll('.repeat-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentRepeat = tab.dataset.repeat;
+      document.getElementById(`${containerId}-weekly`).style.display = currentRepeat === 'weekly' ? 'block' : 'none';
+    };
+  });
+
+  // --- Frequency ---
+  let freq = weeklyTimes;
+  let selectedDays = [...weeklyDays];
+
+  function updateDayCount() {
+    const el = document.getElementById(`${containerId}-daycount`);
+    if (el) el.textContent = freq;
+  }
+  function updateDayBoxes() {
+    document.querySelectorAll(`#${containerId}-dayboxes .day-box`).forEach(b => {
+      b.classList.toggle('active', selectedDays.includes(parseInt(b.dataset.day)));
+    });
+  }
+
+  document.getElementById(`${containerId}-freqminus`).onclick = () => {
+    if (freq > 1) {
+      freq--;
+      document.getElementById(`${containerId}-freqnum`).textContent = freq;
+      updateDayCount();
+      while (selectedDays.length > freq) selectedDays.pop();
+      updateDayBoxes();
+    }
+  };
+  document.getElementById(`${containerId}-freqplus`).onclick = () => {
+    if (freq < 7) {
+      freq++;
+      document.getElementById(`${containerId}-freqnum`).textContent = freq;
+      updateDayCount();
+      updateDayBoxes();
+    }
+  };
+
+  document.querySelectorAll(`#${containerId}-dayboxes .day-box`).forEach(b => {
+    b.onclick = () => {
+      const day = parseInt(b.dataset.day);
+      if (selectedDays.includes(day)) {
+        selectedDays = selectedDays.filter(d => d !== day);
+      } else {
+        if (selectedDays.length < freq) selectedDays.push(day);
+        else {
+          // replace last
+          selectedDays.shift();
+          selectedDays.push(day);
+        }
+      }
+      updateDayBoxes();
+    };
+  });
+
+  // Return getter
+  return {
+    getData() {
+      return {
+        emoji:       emojibtn.textContent.trim(),
+        name:        document.getElementById(`${containerId}-name`).value.trim(),
+        color:       selectedColor,
+        repeat:      currentRepeat,
+        weeklyTimes: freq,
+        weeklyDays:  [...selectedDays],
+      };
+    }
+  };
+}
+
+// ============================================
+// SORT SHEET (drag-and-drop reorder)
+// ============================================
+
+let sortableForm = null;
+let dragSrc = null;
+
+function openSortSheet() {
+  const habits = DB.getActiveHabits();
+  const list = document.getElementById('sort-list');
+  list.innerHTML = '';
+
+  habits.forEach(h => {
+    const item = document.createElement('div');
+    item.className = 'sortable-item';
+    item.dataset.id = h.id;
+    item.setAttribute('draggable', true);
+    item.innerHTML = `
+      <div class="drag-handle">
+        <svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+        <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+        <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+      </div>
+      <span style="font-size:17px">${h.emoji || '⭐'}</span>
+      <span style="font-weight:400; font-size:14px; flex:1">${h.name}</span>
+      <div style="width:12px;height:12px;border-radius:50%;background:${h.color};flex-shrink:0;margin-right:4px"></div>
+    `;
+
+    item.addEventListener('dragstart', e => {
+      dragSrc = item;
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      dragSrc = null;
+    });
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (dragSrc && dragSrc !== item) {
+        const rect = item.getBoundingClientRect();
+        const mid  = rect.top + rect.height / 2;
+        if (e.clientY < mid) list.insertBefore(dragSrc, item);
+        else list.insertBefore(dragSrc, item.nextSibling);
+      }
+    });
+
+    // Touch support
+    let touchStartY = 0;
+    item.addEventListener('touchstart', e => {
+      touchStartY = e.touches[0].clientY;
+      dragSrc = item;
+      item.classList.add('dragging');
+    }, { passive: true });
+    item.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const y = e.touches[0].clientY;
+      const items = [...list.querySelectorAll('.sortable-item:not(.dragging)')];
+      for (const other of items) {
+        const rect = other.getBoundingClientRect();
+        if (y < rect.top + rect.height / 2) {
+          list.insertBefore(dragSrc, other);
+          break;
+        } else if (other === items[items.length-1]) {
+          list.appendChild(dragSrc);
+        }
+      }
+    }, { passive: false });
+    item.addEventListener('touchend', () => {
+      item.classList.remove('dragging');
+      dragSrc = null;
+    });
+
+    list.appendChild(item);
+  });
+
+  openSheet('sort');
+}
+
+async function saveSortOrder() {
+  const items = document.querySelectorAll('#sort-list .sortable-item');
+  const updates = [...items].map((item, idx) => DB.updateHabit(item.dataset.id, { order: idx }));
+  await Promise.all(updates);
+  closeSheet('sort');
+  renderHabitCards();
+}
+// ============================================
+// BERANDA PAGE
+// ============================================
+
+let currentWeekMonday = getMondayOfWeek(new Date());
+let habitFormRef = null;
+let editingHabitId = null;
+
+function initBeranda() {
+  renderHero();
+  renderReflection();
+  renderWeekHeader();
+  renderHabitCards();
+
+  // FAB tambah habit
+  document.getElementById('fab-add').onclick = () => {
+    editingHabitId = null;
+    document.getElementById('sheet-add-title').textContent = 'Buat Habit Baru';
+    document.getElementById('btn-create-habit').style.display = '';
+    document.getElementById('btn-edit-actions').style.display = 'none';
+    habitFormRef = buildHabitForm('habit-form-container', 'create');
+    openSheet('add-habit');
+  };
+
+  // FAB atur urutan
+  document.getElementById('fab-sort').onclick = () => openSortSheet();
+
+  // Simpan habit baru
+  document.getElementById('btn-create-habit').onclick = async () => {
+    const data = habitFormRef.getData();
+    if (!data.name) { alert('Nama habit tidak boleh kosong!'); return; }
+    if (data.repeat === 'weekly' && data.weeklyDays.length !== data.weeklyTimes) {
+      alert(`Pilih tepat ${data.weeklyTimes} hari rencana!`); return;
+    }
+    await DB.addHabit(data);
+    closeSheet('add-habit');
+    renderHabitCards();
+  };
+
+  // Simpan edit habit
+  document.getElementById('btn-save-habit').onclick = async () => {
+    if (!editingHabitId) return;
+    const data = habitFormRef.getData();
+    if (!data.name) { alert('Nama habit tidak boleh kosong!'); return; }
+    if (data.repeat === 'weekly' && data.weeklyDays.length !== data.weeklyTimes) {
+      alert(`Pilih tepat ${data.weeklyTimes} hari rencana!`); return;
+    }
+    await DB.updateHabit(editingHabitId, data);
+    closeSheet('add-habit');
+    renderHabitCards();
+  };
+
+  // Arsipkan habit
+  document.getElementById('btn-archive-habit').onclick = async () => {
+    if (!editingHabitId) return;
+    const overlay = document.getElementById('modal-archive-overlay');
+    overlay.style.display = 'flex';
+  };
+  document.getElementById('modal-archive-cancel').onclick = () => {
+    document.getElementById('modal-archive-overlay').style.display = 'none';
+  };
+  document.getElementById('modal-archive-confirm').onclick = async () => {
+    if (!editingHabitId) return;
+    document.getElementById('modal-archive-overlay').style.display = 'none';
+    await DB.updateHabit(editingHabitId, {
+      archived: true,
+      archivedAt: todayStr(),
+    });
+    closeSheet('add-habit');
+    renderHabitCards();
+  };
+  document.getElementById('modal-archive-overlay').onclick = (e) => {
+    if (e.target === document.getElementById('modal-archive-overlay'))
+      document.getElementById('modal-archive-overlay').style.display = 'none';
+  };
+
+  // Simpan sort
+  document.getElementById('btn-save-sort').onclick = saveSortOrder;
+
+  // Minggu navigation
+  document.getElementById('btn-prev-week').onclick = () => {
+    currentWeekMonday = new Date(currentWeekMonday);
+    currentWeekMonday.setDate(currentWeekMonday.getDate() - 7);
+    renderWeekHeader();
+    renderHabitCards();
+  };
+  document.getElementById('btn-next-week').onclick = () => {
+    currentWeekMonday = new Date(currentWeekMonday);
+    currentWeekMonday.setDate(currentWeekMonday.getDate() + 7);
+    renderWeekHeader();
+    renderHabitCards();
+  };
+
+  // Week title tap → custom date picker
+  document.getElementById('week-title-btn').onclick = () => openDatePicker();
+
+  // Reflection buttons are bound dynamically in renderReflection()
+
+  registerSheet('add-habit');
+  registerSheet('sort');
+}
+
+function renderHero() {
+  const now = new Date();
+  const hari = HARI_FULL[now.getDay() === 0 ? 6 : now.getDay() - 1];
+  document.getElementById('hero-hari').textContent = hari;
+  document.getElementById('hero-tanggal').textContent = now.getDate();
+  document.getElementById('hero-bulan-tahun').textContent = `${BULAN[now.getMonth()]} ${now.getFullYear()}`;
+}
+
+function renderReflection(forceEdit = false) {
+  const today = todayStr();
+  const existing = DB.getReflection(today);
+  const section = document.getElementById('reflection-section');
+
+  if (existing && !forceEdit) {
+    section.innerHTML = `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+        <p style="font-size:14px;font-weight:400;color:var(--text-primary);line-height:1.55;flex:1;font-style:italic;">"${existing}"</p>
+        <button id="btn-edit-reflection" style="flex-shrink:0;background:none;border:1.5px solid var(--border);border-radius:var(--radius-full);padding:6px 12px;font-family:var(--font);font-size:11px;font-weight:400;color:var(--text-secondary);cursor:pointer;">Edit</button>
+      </div>
+    `;
+    document.getElementById('btn-edit-reflection').onclick = () => renderReflection(true);
+  } else {
+    section.innerHTML = `
+      <div class="reflection-input-wrap">
+        <input class="form-input" id="reflection-input" placeholder="Satu kalimat untuk hari ini" style="font-size:12px;" value="${existing || ''}">  
+        <button id="btn-save-reflection" class="btn btn-primary" style="white-space:nowrap;padding:13px 20px;flex-shrink:0;">Simpan</button>
+      </div>
+    `;
+    document.getElementById('btn-save-reflection').onclick = saveReflection;
+    if (forceEdit) document.getElementById('reflection-input').focus();
+  }
+}
+function syncAfterReflection(dateStr) {
+  // Sync all 3 places that show reflection data
+  if (dateStr === todayStr()) renderReflection();
+  renderCalendar();
+  renderRingkasan();
+  renderReflectionCard();
+}
+
+async function saveReflection() {
+  const inp = document.getElementById('reflection-input');
+  if (!inp) return;
+  const val = inp.value.trim();
+  await DB.setReflection(todayStr(), val);
+  syncAfterReflection(todayStr());
+}
+
+function renderWeekHeader() {
+  const { week, year } = getWeekInfo(currentWeekMonday);
+  document.getElementById('week-num').textContent = `Minggu ke-${week}/52`;
+  document.getElementById('week-range').textContent = formatRangeWeek(currentWeekMonday);
+}
+
+function renderHabitCards() {
+  const habits = DB.getActiveHabits();
+  const container = document.getElementById('habit-list');
+  container.innerHTML = '';
+
+  if (habits.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:52px 24px;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px;">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        <div style="font-size:14px;font-weight:400;color:var(--text-secondary);margin-bottom:6px;">Belum ada habit</div>
+        <div style="font-size:12px;font-weight:300;color:var(--text-muted);">Tap tombol + Tambah Habit untuk mulai</div>
+      </div>
+    `;
+    return;
+  }
+
+  const days = getDaysOfWeek(currentWeekMonday);
+  const today = todayStr();
+
+  habits.forEach(habit => {
+    const card = document.createElement('div');
+    card.className = 'card habit-card';
+    card.style.marginBottom = '12px';
+    card.style.padding = '16px 16px 14px';
+
+    const repeatLabel = habit.repeat === 'daily'
+      ? 'Setiap hari'
+      : `${habit.weeklyTimes}x seminggu`;
+
+    let checkboxesHTML = '';
+    days.forEach((d, i) => {
+      const ds = dateToStr(d);
+      const isFut = isFuture(ds);
+      const isChecked = DB.getCheck(ds, habit.id);
+      const isToday_ = isToday(ds);
+
+      // Determine border style
+      // For weekly: planned days = solid color border, non-planned = dashed grey
+      // For daily: always solid color border
+      let isDashed = false;
+      if (habit.repeat === 'weekly') {
+        const dow = d.getDay() === 0 ? 6 : d.getDay() - 1;
+        const isPlanned = (habit.weeklyDays || []).includes(dow);
+        isDashed = !isPlanned;
+      }
+
+      let cbClass = 'habit-checkbox';
+      if (isDashed && !isChecked) cbClass += ' dashed';
+      if (isDashed && isChecked) cbClass += ' dashed checked';
+      if (!isDashed && isChecked) cbClass += ' checked';
+      if (isFut) cbClass += ' future';
+      
+
+      // Border color: dashed non-checked = grey (via CSS), else habit color
+      const borderColor = (isDashed && !isChecked) ? 'var(--border-dashed)' : habit.color;
+      const bgColor = isChecked ? habit.color : 'transparent';
+
+      const dayLabelColor = isToday_
+        ? 'font-weight:400;color:var(--text-primary);'
+        : 'font-weight:300;color:var(--text-muted);';
+      const dateNum = d.getDate();
+
+      const dateSpanColor = isDashed ? 'var(--text-muted)' : habit.color;
+      const dateSpanHtml = !isChecked
+        ? `<span style="font-size:10px;font-weight:400;color:${dateSpanColor};line-height:1;position:absolute;">${dateNum}</span>`
+        : '';
+      const dashedCheckedStyle = (isDashed && isChecked) ? 'border-style:solid;' : '';
+      checkboxesHTML += `
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div style="font-size:10px;${dayLabelColor}">${HARI_SHORT[i]}</div>
+          <div class="${cbClass}"
+               style="border-color:${borderColor};background:${bgColor};${dashedCheckedStyle}"
+               data-date="${ds}" data-id="${habit.id}" data-future="${isFut}">
+            ${dateSpanHtml}
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+      `;
+    });
+
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <button class="habit-name-btn" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:0;font-family:var(--font);-webkit-tap-highlight-color:transparent;">
+          <span style="font-size:20px;line-height:1">${habit.emoji || '⭐'}</span>
+          <span style="font-size:14px;font-weight:400;color:var(--text-primary)">${habit.name}</span>
+        </button>
+        <span style="font-size:11px;font-weight:300;color:var(--text-muted);white-space:nowrap;">${repeatLabel}</span>
+      </div>
+      <div style="height:1px;background:var(--border);margin-bottom:12px;"></div>
+      <div style="display:flex;justify-content:space-between;">
+        ${checkboxesHTML}
+      </div>
+    `;
+
+    card.querySelector('.habit-name-btn').onclick = () => openEditHabit(habit.id);
+
+    card.querySelectorAll('.habit-checkbox').forEach(cb => {
+      cb.onclick = () => {
+        if (cb.dataset.future === 'true') return;
+        const ds = cb.dataset.date;
+        const hid = cb.dataset.id;
+        DB.setCheck(ds, hid, !DB.getCheck(ds, hid));
+        renderHabitCards();
+        // Sync laporan calendar if active
+        if (document.getElementById('page-laporan').classList.contains('active')) {
+          renderCalendar();
+          renderRingkasan();
+        }
+      };
+    });
+
+    container.appendChild(card);
+  });
+}
+function openEditHabit(habitId) {
+  editingHabitId = habitId;
+  const habit = DB.getHabits().find(h => h.id === habitId);
+  if (!habit) return;
+
+  document.getElementById('sheet-add-title').textContent = 'Edit Habit';
+  document.getElementById('btn-create-habit').style.display = 'none';
+  document.getElementById('btn-edit-actions').style.display = '';
+  habitFormRef = buildHabitForm('habit-form-container', 'edit', habit);
+  openSheet('add-habit');
+}
+// ============================================
+// LAPORAN PAGE
+// ============================================
+
+let laporanWeekMonday = getMondayOfWeek(new Date());
+let laporanChartMonths = 6;
+let calendarDate = new Date(); // displayed month
+
+function initLaporan() {
+  renderRingkasan();
+  renderBarChart();
+  renderLineChart();
+  renderCalendar();
+  initLaporanWeekNav();
+  initCalendarNav();
+  initRateFilter();
+  registerSheet('day-detail');
+  initReflectionCard();
+  renderReflectionCard();
+}
+
+// ============================================
+// RINGKASAN
+// ============================================
+function renderRingkasan() {
+  document.getElementById('stat-streak').textContent     = getCurrentStreak();
+  document.getElementById('stat-rate').textContent       = getOverallCompletionRate() + '%';
+  document.getElementById('stat-completed').textContent  = getTotalHabitsCompleted().toLocaleString('id-ID');
+  document.getElementById('stat-perfect').textContent    = getTotalPerfectDays();
+}
+
+// ============================================
+// BAR CHART - Habit diselesaikan per minggu
+// ============================================
+function renderBarChart() {
+  const data   = getWeeklyBarData(laporanWeekMonday);
+  const maxVal = Math.max(...data.map(d => d.count), 1);
+  const today  = todayStr();
+
+  const svg = document.getElementById('bar-chart-svg');
+  const W = svg.clientWidth || 340, H = 180;
+  const padL = 28, padB = 28, padT = 16, padR = 12;
+  const chartW = W - padL - padR;
+  const chartH = H - padB - padT;
+  const barW = (chartW / 7) * 0.55;
+  const gap   = chartW / 7;
+
+  // Grid lines
+  let gridLines = '';
+  for (let v = 0; v <= maxVal; v++) {
+    const y = padT + chartH - (v / maxVal) * chartH;
+    gridLines += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
+    if (v > 0) gridLines += `<text x="${padL - 4}" y="${y + 4}" font-size="9" fill="var(--text-muted)" text-anchor="end">${v}</text>`;
+  }
+
+  // Bars
+  let bars = '';
+  data.forEach((d, i) => {
+    const x = padL + gap * i + gap / 2 - barW / 2;
+    const barH = d.count > 0 ? (d.count / maxVal) * chartH : 4;
+    const y = padT + chartH - barH;
+    const isToday_ = d.dateStr === today;
+    const fill = isToday_ ? 'var(--text-primary)' : 'var(--border-strong)';
+    const r = 6;
+
+    bars += `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" rx="${r}" fill="${fill}" opacity="${isToday_?1:0.6}"/>`;
+    if (d.count > 0) {
+      bars += `<text x="${x + barW/2}" y="${y - 5}" font-size="10" font-weight="400" fill="${fill}" text-anchor="middle">${d.count}</text>`;
+    }
+    bars += `<text x="${x + barW/2}" y="${H - 6}" font-size="10" fill="${d.dateStr === today ? 'var(--text-primary)' : 'var(--text-muted)'}" font-weight="${d.dateStr === today ? '800':'600'}" text-anchor="middle">${HARI_SHORT[i]}</text>`;
+  });
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = gridLines + bars;
+}
+
+function initLaporanWeekNav() {
+  document.getElementById('bar-prev-week').onclick = () => {
+    laporanWeekMonday = new Date(laporanWeekMonday);
+    laporanWeekMonday.setDate(laporanWeekMonday.getDate() - 7);
+    updateBarWeekLabel();
+    renderBarChart();
+  };
+  document.getElementById('bar-next-week').onclick = () => {
+    laporanWeekMonday = new Date(laporanWeekMonday);
+    laporanWeekMonday.setDate(laporanWeekMonday.getDate() + 7);
+    updateBarWeekLabel();
+    renderBarChart();
+  };
+  updateBarWeekLabel();
+}
+function updateBarWeekLabel() {
+  document.getElementById('bar-week-label').textContent = formatRangeWeek(laporanWeekMonday);
+}
+
+// ============================================
+// LINE CHART - Completion rate
+// ============================================
+function renderLineChart() {
+  const data = getMonthlyRateData(laporanChartMonths);
+  if (!data.length) return;
+
+  const svg = document.getElementById('line-chart-svg');
+  const W = svg.clientWidth || 340, H = 180;
+  const padL = 36, padB = 28, padT = 16, padR = 16;
+  const chartW = W - padL - padR, chartH = H - padB - padT;
+
+  // Y grid 0,20,40,60,80,100
+  let grid = '';
+  [0,20,40,60,80,100].forEach(v => {
+    const y = padT + chartH - (v / 100) * chartH;
+    grid += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
+    grid += `<text x="${padL-4}" y="${y+4}" font-size="9" fill="var(--text-muted)" text-anchor="end">${v}%</text>`;
+  });
+
+  const points = data.map((d, i) => {
+    const x = padL + (i / (data.length - 1 || 1)) * chartW;
+    const y = padT + chartH - (d.pct / 100) * chartH;
+    return { x, y, pct: d.pct, label: d.label };
+  });
+
+  // Area fill
+  let areaPath = `M${points[0].x},${padT+chartH}`;
+  points.forEach(p => { areaPath += ` L${p.x},${p.y}`; });
+  areaPath += ` L${points[points.length-1].x},${padT+chartH} Z`;
+
+  // Line path
+  let linePath = `M${points[0].x},${points[0].y}`;
+  points.slice(1).forEach(p => { linePath += ` L${p.x},${p.y}`; });
+
+  let dotsSVG = '';
+  points.forEach((p, i) => {
+    const isLast = i === points.length - 1;
+    dotsSVG += `<circle cx="${p.x}" cy="${p.y}" r="${isLast ? 5 : 4}" fill="${isLast ? 'var(--text-primary)' : 'var(--bg-card)'}" stroke="var(--text-primary)" stroke-width="2"/>`;
+    if (isLast) {
+      dotsSVG += `
+        <rect x="${p.x - 22}" y="${p.y - 30}" width="44" height="24" rx="12" fill="var(--text-primary)"/>
+        <text x="${p.x}" y="${p.y - 14}" font-size="11" font-weight="400" fill="var(--bg)" text-anchor="middle">${p.pct}%</text>
+      `;
+    }
+    dotsSVG += `<text x="${p.x}" y="${H - 6}" font-size="10" fill="var(--text-muted)" font-weight="400" text-anchor="middle">${p.label}</text>`;
+  });
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--text-primary)" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="var(--text-primary)" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${grid}
+    <path d="${areaPath}" fill="url(#areaGrad)"/>
+    <path d="${linePath}" fill="none" stroke="var(--text-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dotsSVG}
+  `;
+}
+
+function initRateFilter() {
+  const sel = document.getElementById('rate-filter-select');
+  if (sel) sel.onchange = () => { laporanChartMonths = parseInt(sel.value); renderLineChart(); };
+}
+
+// ============================================
+// CALENDAR STATS
+// ============================================
+function renderCalendar() {
+  const year  = calendarDate.getFullYear();
+  const month = calendarDate.getMonth();
+
+  document.getElementById('cal-month-label').textContent = `${BULAN[month]} ${year}`;
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay  = new Date(year, month + 1, 0);
+  let startDow = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  // Headers
+  HARI_SHORT.forEach(h => {
+    const el = document.createElement('div');
+    el.style.cssText = 'text-align:center;font-size:10px;font-weight:400;color:var(--text-muted);padding:4px 0';
+    el.textContent = h;
+    grid.appendChild(el);
+  });
+
+  // Blank cells before first day
+  for (let i = 0; i < startDow; i++) {
+    grid.appendChild(document.createElement('div'));
+  }
+
+  const today = todayStr();
+
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const { done, total } = getDayCompletion(ds);
+    const pct = total > 0 ? done / total : 0;
+    const isFut = ds > today;
+    const isTod = ds === today;
+
+    const el = document.createElement('div');
+    el.style.cssText = 'display:flex;align-items:center;justify-content:center;padding:3px;cursor:pointer;';
+
+    const size = 36;
+    const r = 15, cx = 18, cy = 18;
+    const circ = 2 * Math.PI * r;
+    const dash = isFut ? 0 : pct * circ;
+    const arcColor = 'var(--text-primary)';
+    const ringColor = 'var(--border)';
+    const textColor = isTod ? 'var(--text-primary)' : (pct >= 1 ? 'var(--text-primary)' : 'var(--text-secondary)');
+
+    let arcSVG = '';
+    if (!isFut && pct > 0) {
+      if (pct >= 1) {
+        // Full circle — no dasharray needed
+        arcSVG = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${arcColor}" stroke-width="2.5"/>`;
+      } else {
+        // Partial arc — start from 12 o'clock (top), go clockwise
+        arcSVG = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${arcColor}" stroke-width="2.5" stroke-dasharray="${dash} ${circ}" stroke-dashoffset="${circ / 4}" stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})"/>`;
+      }
+    }
+
+    el.innerHTML = `
+      <svg width="${size}" height="${size}" viewBox="0 0 36 36">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${ringColor}" stroke-width="2"/>
+        ${arcSVG}
+        <text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="10" font-weight="400" fill="${textColor}" font-family="Manrope,sans-serif">${day}</text>
+      </svg>
+    `;
+
+    if (!isFut) {
+      el.onclick = () => openDayDetail(ds);
+    }
+    grid.appendChild(el);
+  }
+}
+
+function initCalendarNav() {
+  document.getElementById('cal-prev').onclick = () => {
+    calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1);
+    renderCalendar();
+  };
+  document.getElementById('cal-next').onclick = () => {
+    calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1);
+    renderCalendar();
+  };
+  document.getElementById('cal-month-label').onclick = () => openMonthPicker();
+}
+
+// ============================================
+// DAY DETAIL BOTTOM SHEET
+// ============================================
+let detailDateStr = null;
+
+function openDayDetail(dateStr) {
+  detailDateStr = dateStr;
+  const d = strToDate(dateStr);
+  document.getElementById('day-detail-title').textContent = `${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}`;
+  renderDayDetail();
+  openSheet('day-detail');
+}
+
+function renderDayDetail() {
+  const ds = detailDateStr;
+  const habits = DB.getActiveHabits();
+  const reflection = DB.getReflection(ds);
+
+  // Reflection
+  const refSection = document.getElementById('day-reflection');
+  refSection.innerHTML = `
+    <div style="font-size:12px;font-weight:400;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Catatan Refleksi</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input class="form-input" id="day-ref-input" style="flex:1;font-size:12px" placeholder="Satu kalimat untuk hari ini" value="${reflection}">
+      <button class="btn btn-primary btn-sm" id="btn-save-day-ref">Simpan</button>
+    </div>
+  `;
+  document.getElementById('btn-save-day-ref').onclick = async () => {
+    const val = document.getElementById('day-ref-input').value.trim();
+    await DB.setReflection(ds, val);
+    syncAfterReflection(ds);
+  };
+
+  // Habits
+  const habitList = document.getElementById('day-habit-list');
+  habitList.innerHTML = `<div style="font-size:12px;font-weight:400;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Habit</div>`;
+
+  if (habits.length === 0) {
+    habitList.innerHTML += `<div style="color:var(--text-muted);font-size:12px">Belum ada habit aktif.</div>`;
+    return;
+  }
+
+  habits.forEach(h => {
+    if (!habitExistsOnDate(h, ds)) return;
+    const checked = DB.getCheck(ds, h.id);
+
+    // Determine if this is a dashed (non-planned weekly) day
+    const cbType = habitCheckboxType(h, ds);
+    const isDashed = h.repeat === 'weekly' && cbType !== 'planned';
+    // When dashed+checked: solid fill covers dashed (border-style:solid)
+    let cbClass = 'habit-checkbox';
+    if (isDashed && !checked) cbClass += ' dashed';
+    if (checked) cbClass += ' checked';
+    const borderColor = (isDashed && !checked) ? 'var(--border-dashed)' : h.color;
+    const bgColor = checked ? h.color : 'transparent';
+    const borderStyle = (isDashed && checked) ? 'border-style:solid;' : '';
+
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)';
+    item.innerHTML = `
+      <div class="${cbClass}" style="border-color:${borderColor};background:${bgColor};${borderStyle}" data-id="${h.id}">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <span style="font-size:15px">${h.emoji || '⭐'}</span>
+      <span style="font-size:13px;font-weight:400;color:var(--text-primary)">${h.name}</span>
+    `;
+    item.querySelector('.habit-checkbox').onclick = async (e) => {
+      const hid = e.currentTarget.dataset.id;
+      await DB.setCheck(ds, hid, !DB.getCheck(ds, hid));
+      renderDayDetail();
+      renderCalendar();
+      renderRingkasan();
+      if (typeof renderHabitCards === 'function') renderHabitCards();
+    };
+    habitList.appendChild(item);
+  });
+}
+
+// ============================================
+// CATATAN REFLEKSI HARIAN (Laporan)
+// ============================================
+let refWeekMonday = getMondayOfWeek(new Date());
+let refEditDateStr = null;
+
+function initReflectionCard() {
+  registerSheet('ref-edit');
+
+  document.getElementById('ref-prev-week').onclick = () => {
+    refWeekMonday = new Date(refWeekMonday);
+    refWeekMonday.setDate(refWeekMonday.getDate() - 7);
+    renderReflectionCard();
+  };
+  document.getElementById('ref-next-week').onclick = () => {
+    refWeekMonday = new Date(refWeekMonday);
+    refWeekMonday.setDate(refWeekMonday.getDate() + 7);
+    renderReflectionCard();
+  };
+
+  document.getElementById('btn-save-ref-edit').onclick = async () => {
+    if (!refEditDateStr) return;
+    const val = document.getElementById('ref-edit-input').value.trim();
+    await DB.setReflection(refEditDateStr, val);
+    closeSheet('ref-edit');
+    syncAfterReflection(refEditDateStr);
+  };
+}
+
+function renderReflectionCard() {
+  const days = getDaysOfWeek(refWeekMonday);
+  const today = todayStr();
+
+  // Update week label
+  document.getElementById('ref-week-label').textContent = formatRangeWeek(refWeekMonday);
+
+  const list = document.getElementById('ref-list');
+  list.innerHTML = '';
+
+  days.forEach((d, i) => {
+    const ds = dateToStr(d);
+    const reflection = DB.getReflection(ds);
+    const isFuture = ds > today;
+    const isToday = ds === today;
+
+    const row = document.createElement('div');
+    row.style.cssText = [
+      'display:flex;align-items:flex-start;gap:12px;padding:11px 0;',
+      i < 6 ? 'border-bottom:1px solid var(--border);' : '',
+      isFuture ? 'opacity:0.4;' : 'cursor:pointer;',
+    ].join('');
+
+    const dateLabel = `${d.getDate()} ${BULAN[d.getMonth()].slice(0,3)}`;
+    const dayLabel  = HARI_FULL[i];
+
+    row.innerHTML = `
+      <div style="flex-shrink:0;width:52px;">
+        <div style="font-size:11px;font-weight:400;color:${isToday ? 'var(--text-primary)' : 'var(--text-muted)'};">${dateLabel}</div>
+        <div style="font-size:10px;font-weight:300;color:var(--text-muted);margin-top:1px;">${dayLabel}</div>
+      </div>
+      <div style="flex:1;min-width:0;">
+        ${reflection
+          ? `<div style="font-size:12px;font-weight:400;color:var(--text-primary);line-height:1.55;">${reflection}</div>`
+          : `<div style="font-size:12px;font-weight:300;color:var(--text-muted);font-style:italic;">${isFuture ? '—' : 'Belum ada catatan'}</div>`
+        }
+      </div>
+    `;
+
+    if (!isFuture) {
+      row.onclick = () => openRefEdit(ds, d);
+    }
+
+    list.appendChild(row);
+  });
+}
+
+function openRefEdit(dateStr, dateObj) {
+  refEditDateStr = dateStr;
+  const d = dateObj || strToDate(dateStr);
+  const dayIdx = d.getDay() === 0 ? 6 : d.getDay() - 1;
+  document.getElementById('ref-edit-title').textContent =
+    `${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}`;
+  document.getElementById('ref-edit-input').value = DB.getReflection(dateStr);
+  openSheet('ref-edit');
+}
+
+// ============================================
+// PROFIL PAGE
+// ============================================
+
+function initProfil() {
+  renderProfil();
+  registerSheet('archived');
+}
+
+function renderProfil() {
+  const p = DB.getProfile();
+
+  // Name edit
+  const nameEl = document.getElementById('profile-name');
+  const nameInput = document.getElementById('profile-name-input');
+
+  nameEl.textContent = p.name;
+  nameInput.value = p.name;
+  document.getElementById('profile-email').textContent = p.email;
+
+  document.getElementById('btn-edit-name').onclick = () => {
+    nameEl.style.display = 'none';
+    nameInput.style.display = '';
+    document.getElementById('btn-save-name').style.display = '';
+    document.getElementById('btn-edit-name').style.display = 'none';
+    nameInput.focus();
+  };
+
+  document.getElementById('btn-save-name').onclick = async () => {
+    const val = nameInput.value.trim();
+    if (!val) return;
+    const prof = DB.getProfile();
+    prof.name = val;
+    await DB.saveProfile(prof);
+    nameEl.textContent = val;
+    nameEl.style.display = '';
+    nameInput.style.display = 'none';
+    document.getElementById('btn-save-name').style.display = 'none';
+    document.getElementById('btn-edit-name').style.display = '';
+  };
+
+  // Archived habits button
+  document.getElementById('btn-archived').onclick = openArchivedSheet;
+
+  // Reset data
+  document.getElementById('btn-reset').onclick = () => {
+    const overlay = document.getElementById('modal-reset-overlay');
+    overlay.style.display = 'flex';
+  };
+  document.getElementById('modal-reset-cancel').onclick = () => {
+    document.getElementById('modal-reset-overlay').style.display = 'none';
+  };
+  document.getElementById('modal-reset-confirm').onclick = async () => {
+    document.getElementById('modal-reset-overlay').style.display = 'none';
+    showLoading('Menghapus data...');
+    await DB.resetAllData();
+    document.getElementById('loading-overlay').style.display = 'none';
+    renderHabitCards();
+    renderReflection();
+    renderRingkasan();
+    renderCalendar();
+    renderReflectionCard();
+  };
+  // Close modal on overlay click
+  document.getElementById('modal-reset-overlay').onclick = (e) => {
+    if (e.target === document.getElementById('modal-reset-overlay'))
+      document.getElementById('modal-reset-overlay').style.display = 'none';
+  };
+
+  // Delete modal
+  document.getElementById('modal-delete-cancel').onclick = () => {
+    document.getElementById('modal-delete-overlay').style.display = 'none';
+  };
+  document.getElementById('modal-delete-overlay').onclick = (e) => {
+    if (e.target === document.getElementById('modal-delete-overlay'))
+      document.getElementById('modal-delete-overlay').style.display = 'none';
+  };
+
+  // Logout
+  document.getElementById('btn-logout').onclick = async () => {
+    if (confirm('Yakin ingin keluar?')) {
+      await authSignOut();
+      showAuthPage('masuk');
+    }
+  };
+}
+
+function openArchivedSheet() {
+  renderArchivedList();
+  openSheet('archived');
+}
+
+function renderArchivedList() {
+  const habits = DB.getArchivedHabits();
+  const list = document.getElementById('archived-list');
+  list.innerHTML = '';
+
+  if (habits.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px">Tidak ada habit yang diarsipkan.</div>`;
+    return;
+  }
+
+  habits.forEach(h => {
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)';
+    item.innerHTML = `
+      <div style="width:10px;height:10px;border-radius:50%;background:${h.color};flex-shrink:0"></div>
+      <span style="font-size:16px">${h.emoji||'⭐'}</span>
+      <span style="flex:1;font-size:14px;font-weight:400">${h.name}</span>
+      <button class="btn btn-secondary btn-sm" data-action="recover" data-id="${h.id}">Pulihkan</button>
+      <button class="btn btn-danger btn-sm" data-action="delete" data-id="${h.id}">Hapus</button>
+    `;
+
+    item.querySelector('[data-action="recover"]').onclick = async () => {
+      await DB.updateHabit(h.id, {
+        archived: false,
+        archivedAt: null,
+        recoveredAt: null,
+      });
+      renderArchivedList();
+      renderHabitCards();
+    };
+
+    item.querySelector('[data-action="delete"]').onclick = () => {
+      const desc = document.getElementById('modal-delete-desc');
+      if (desc) desc.textContent = `Semua data dan histori "${h.name}" akan dihapus permanen dan tidak bisa dipulihkan.`;
+      const overlay = document.getElementById('modal-delete-overlay');
+      overlay.style.display = 'flex';
+      document.getElementById('modal-delete-confirm').onclick = async () => {
+        overlay.style.display = 'none';
+        await DB.deleteHabit(h.id);
+        renderArchivedList();
+      }; // async already on outer fn
+    };
+
+    list.appendChild(item);
+  });
+}
+
+// ============================================
+// NAVIGATION
+// ============================================
+const pages = {
+  beranda: document.getElementById('page-beranda'),
+  laporan: document.getElementById('page-laporan'),
+  profil:  document.getElementById('page-profil'),
+};
+
+
+function goToPage(name) {
+  for (const k in pages) {
+    pages[k].classList.toggle('active', k === name);
+  }
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.page === name);
+  });
+
+
+  if (name === 'laporan') {
+    renderRingkasan();
+    setTimeout(() => { renderBarChart(); renderLineChart(); }, 50);
+    renderCalendar();
+    renderReflectionCard();
+  }
+}
+
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.onclick = () => goToPage(btn.dataset.page);
+});
+
+// ============================================
+// AUTH UI HELPERS
+// ============================================
+function togglePassword(inputId, iconId) {
+  const inp  = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  icon.innerHTML = show
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+}
+
+function switchAuthTab(tab) {
+  const tabs   = ['masuk','daftar','lupa','reset'];
+  const forms  = tabs.map(t => document.getElementById(`form-${t}`));
+  const btnMasuk  = document.getElementById('tab-masuk');
+  const btnDaftar = document.getElementById('tab-daftar');
+  const authTabs  = document.getElementById('auth-tabs');
+
+  // Show/hide forms
+  forms.forEach(f => f.style.display = 'none');
+  document.getElementById(`form-${tab}`).style.display = '';
+
+  // Tab bar only for masuk/daftar
+  authTabs.style.display = (tab === 'lupa' || tab === 'reset') ? 'none' : 'flex';
+
+  if (tab === 'masuk') {
+    btnMasuk.style.background  = 'var(--bg-card)';
+    btnMasuk.style.color       = 'var(--text-primary)';
+    btnMasuk.style.boxShadow   = '0 1px 4px var(--shadow)';
+    btnDaftar.style.background = 'transparent';
+    btnDaftar.style.color      = 'var(--text-muted)';
+    btnDaftar.style.boxShadow  = 'none';
+  } else if (tab === 'daftar') {
+    btnDaftar.style.background = 'var(--bg-card)';
+    btnDaftar.style.color      = 'var(--text-primary)';
+    btnDaftar.style.boxShadow  = '0 1px 4px var(--shadow)';
+    btnMasuk.style.background  = 'transparent';
+    btnMasuk.style.color       = 'var(--text-muted)';
+    btnMasuk.style.boxShadow   = 'none';
+  }
+
+  // Clear errors
+  ['masuk','daftar','lupa','reset'].forEach(t => {
+    const el = document.getElementById(`${t}-error`);
+    const ok = document.getElementById(`${t}-success`);
+    if (el) el.style.display = 'none';
+    if (ok) ok.style.display = 'none';
+  });
+}
+
+function setAuthLoading(btnId, loading, defaultText) {
+  const btn = document.getElementById(btnId);
+  btn.disabled = loading;
+  btn.textContent = loading ? 'Mohon tunggu...' : defaultText;
+  btn.style.opacity = loading ? '0.7' : '1';
+}
+
+function showAuthError(id, msg) {
+  const el = document.getElementById(`${id}-error`);
+  el.textContent = msg;
+  el.style.display = '';
+}
+
+function showAuthSuccess(id, msg) {
+  const el = document.getElementById(`${id}-success`);
+  el.textContent = msg;
+  el.style.display = '';
+}
+
+// ============================================
+// AUTH HANDLERS
+// ============================================
+async function handleMasuk() {
+  const email = document.getElementById('masuk-email').value.trim();
+  const pass  = document.getElementById('masuk-password').value;
+  document.getElementById('masuk-error').style.display = 'none';
+
+  if (!email || !pass) { showAuthError('masuk', 'Email dan password tidak boleh kosong.'); return; }
+
+  setAuthLoading('btn-masuk', true, 'Masuk');
+  const { data, error } = await authSignIn(email, pass);
+  setAuthLoading('btn-masuk', false, 'Masuk');
+
+  if (error) {
+    const msg = error.message.includes('Invalid login') ? 'Email atau password salah.' : error.message;
+    showAuthError('masuk', msg);
+    return;
+  }
+  // Session listener will handle the rest
+}
+
+async function handleDaftar() {
+  const name  = document.getElementById('daftar-name').value.trim();
+  const email = document.getElementById('daftar-email').value.trim();
+  const pass  = document.getElementById('daftar-password').value;
+  document.getElementById('daftar-error').style.display = 'none';
+  document.getElementById('daftar-success').style.display = 'none';
+
+  if (!name || !email || !pass) { showAuthError('daftar', 'Semua field harus diisi.'); return; }
+  if (pass.length < 6) { showAuthError('daftar', 'Password minimal 6 karakter.'); return; }
+
+  setAuthLoading('btn-daftar', true, 'Buat Akun');
+  const { data, error } = await authSignUp(email, pass, name);
+  setAuthLoading('btn-daftar', false, 'Buat Akun');
+
+  if (error) { showAuthError('daftar', error.message); return; }
+
+  // If email confirmation is disabled in Supabase, user is logged in immediately
+  if (data?.user?.confirmed_at || data?.session) {
+    // Auto-logged in → session listener handles it
+  } else {
+    showAuthSuccess('daftar', 'Akun berhasil dibuat! Cek email kamu untuk konfirmasi, lalu masuk.');
+  }
+}
+
+async function handleLupa() {
+  const email = document.getElementById('lupa-email').value.trim();
+  document.getElementById('lupa-error').style.display = 'none';
+  document.getElementById('lupa-success').style.display = 'none';
+
+  if (!email) { showAuthError('lupa', 'Masukkan email kamu.'); return; }
+
+  setAuthLoading('btn-lupa', true, 'Kirim Link Reset');
+  const { error } = await authForgotPassword(email);
+  setAuthLoading('btn-lupa', false, 'Kirim Link Reset');
+
+  if (error) { showAuthError('lupa', error.message); return; }
+  showAuthSuccess('lupa', 'Link reset password sudah dikirim ke email kamu.');
+}
+
+async function handleReset() {
+  const pass = document.getElementById('reset-password').value;
+  document.getElementById('reset-error').style.display = 'none';
+
+  if (pass.length < 6) { showAuthError('reset', 'Password minimal 6 karakter.'); return; }
+
+  setAuthLoading('btn-reset-pw', true, 'Simpan Password Baru');
+  const { error } = await authUpdatePassword(pass);
+  setAuthLoading('btn-reset-pw', false, 'Simpan Password Baru');
+
+  if (error) { showAuthError('reset', error.message); return; }
+
+  // Clear the reset mode from URL and go to app
+  window.history.replaceState({}, '', window.location.pathname);
+  showApp();
+}
+
+// ============================================
+// APP SHOW / HIDE
+// ============================================
+function showAuthPage(mode) {
+  document.getElementById('page-auth').style.display = 'flex';
+  document.getElementById('app-shell').style.display = 'none';
+  document.getElementById('loading-overlay').style.display = 'none';
+  switchAuthTab(mode || 'masuk');
+}
+
+async function showApp() {
+  document.getElementById('loading-overlay').style.display = 'flex';
+  document.getElementById('loading-overlay').style.flexDirection = 'column';
+  document.getElementById('page-auth').style.display = 'none';
+
+  await loadAllData();
+
+  const profile = DB.getProfile();
+  applyDarkMode(profile.darkMode);
+
+  document.getElementById('loading-overlay').style.display = 'none';
+  document.getElementById('app-shell').style.display = '';
+
+  // Re-render all
+  renderHero();
+  renderReflection();
+  renderWeekHeader();
+  renderHabitCards();
+  renderProfil();
+}
+
+function showLoading(text) {
+  document.getElementById('loading-text').textContent = text || 'Memuat data...';
+  document.getElementById('loading-overlay').style.display = 'flex';
+}
+
+
+// ============================================
+// DARK MODE
+// ============================================
+async function toggleDarkMode() {
+  const p = DB.getProfile();
+  p.darkMode = !p.darkMode;
+  await DB.saveProfile(p);
+  applyDarkMode(p.darkMode);
+}
+function applyDarkMode(isDark) {
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  const icon = document.getElementById('hero-dm-icon');
+  if (!icon) return;
+  icon.innerHTML = isDark
+    ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
+    : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+}
+
+// ============================================
+// CUSTOM DATE PICKER (Beranda - week navigation)
+// ============================================
+let dpDisplayDate = new Date(); // month shown in picker
+
+function openDatePicker() {
+  dpDisplayDate = new Date(currentWeekMonday);
+  closeDpMyPanel();
+  renderDatePickerGrid();
+  document.getElementById('modal-datepicker-overlay').style.display = 'flex';
+}
+
+function renderDatePickerGrid() {
+  const year  = dpDisplayDate.getFullYear();
+  const month = dpDisplayDate.getMonth();
+  document.getElementById('dp-month-label').textContent = `${BULAN[month]} ${year}`;
+
+  const grid = document.getElementById('dp-grid');
+  grid.innerHTML = '';
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay  = new Date(year, month + 1, 0);
+  const startDow = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+  const today    = todayStr();
+
+  // Blanks
+  for (let i = 0; i < startDow; i++) {
+    grid.appendChild(document.createElement('div'));
+  }
+
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const ds   = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dObj = new Date(year, month, day);
+    const mon  = getMondayOfWeek(dObj);
+    const isCurWeek = dateToStr(mon) === dateToStr(currentWeekMonday);
+    const isToday_  = ds === today;
+
+    const btn = document.createElement('button');
+    btn.textContent = day;
+    btn.style.cssText = [
+      'width:36px;height:36px;border-radius:50%;border:none;cursor:pointer;',
+      'font-family:var(--font);font-size:12px;font-weight:400;',
+      'display:flex;align-items:center;justify-content:center;margin:0 auto;',
+      isCurWeek
+        ? 'background:var(--text-primary);color:var(--bg-card);'
+        : isToday_
+          ? 'background:var(--border);color:var(--text-primary);'
+          : 'background:transparent;color:var(--text-primary);',
+    ].join('');
+
+    btn.onclick = () => {
+      currentWeekMonday = getMondayOfWeek(dObj);
+      renderWeekHeader();
+      renderHabitCards();
+      document.getElementById('modal-datepicker-overlay').style.display = 'none';
+    };
+    grid.appendChild(btn);
+  }
+}
+
+// Month+Year panel inside date picker
+let dpMyYear = new Date().getFullYear();
+let dpMyPanelOpen = false;
+
+function renderDpMyGrid() {
+  document.getElementById('dp-my-year-label').textContent = dpMyYear;
+  const grid = document.getElementById('dp-my-grid');
+  grid.innerHTML = '';
+  const curMonth = dpDisplayDate.getMonth();
+  const curYear  = dpDisplayDate.getFullYear();
+  const now = new Date();
+  const todayMonth = now.getMonth();
+  const todayYear  = now.getFullYear();
+  BULAN.forEach((nama, i) => {
+    const isSelected = dpMyYear === curYear && i === curMonth;
+    const isToday    = dpMyYear === todayYear && i === todayMonth;
+    const btn = document.createElement('button');
+    btn.textContent = nama.slice(0, 3);
+    let style = 'padding:9px 0;border-radius:var(--radius-full);cursor:pointer;font-family:var(--font);font-size:12px;font-weight:400;';
+    if (isSelected) {
+      style += 'background:var(--text-primary);color:var(--bg-card);border:2px solid var(--text-primary);';
+    } else if (isToday) {
+      style += 'background:var(--border);color:var(--text-primary);border:2px solid var(--text-primary);';
+    } else {
+      style += 'background:var(--border);color:var(--text-primary);border:2px solid transparent;';
+    }
+    btn.style.cssText = style;
+    btn.onclick = () => {
+      dpDisplayDate = new Date(dpMyYear, i, 1);
+      closeDpMyPanel();
+      renderDatePickerGrid();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function openDpMyPanel() {
+  dpMyYear = dpDisplayDate.getFullYear();
+  dpMyPanelOpen = true;
+  document.getElementById('dp-my-panel').style.display = 'block';
+  document.getElementById('dp-grid').style.display = 'none';
+  renderDpMyGrid();
+}
+
+function closeDpMyPanel() {
+  dpMyPanelOpen = false;
+  document.getElementById('dp-my-panel').style.display = 'none';
+  document.getElementById('dp-grid').style.display = 'grid';
+}
+
+document.getElementById('dp-month-label').onclick = () => {
+  dpMyPanelOpen ? closeDpMyPanel() : openDpMyPanel();
+};
+document.getElementById('dp-my-prev-year').onclick = () => {
+  dpMyYear--; renderDpMyGrid();
+};
+document.getElementById('dp-my-next-year').onclick = () => {
+  dpMyYear++; renderDpMyGrid();
+};
+
+document.getElementById('dp-prev-month').onclick = () => {
+  dpDisplayDate = new Date(dpDisplayDate.getFullYear(), dpDisplayDate.getMonth() - 1, 1);
+  renderDatePickerGrid();
+};
+document.getElementById('dp-next-month').onclick = () => {
+  dpDisplayDate = new Date(dpDisplayDate.getFullYear(), dpDisplayDate.getMonth() + 1, 1);
+  renderDatePickerGrid();
+};
+document.getElementById('dp-cancel').onclick = () => {
+  document.getElementById('modal-datepicker-overlay').style.display = 'none';
+};
+document.getElementById('modal-datepicker-overlay').onclick = (e) => {
+  if (e.target === document.getElementById('modal-datepicker-overlay'))
+    document.getElementById('modal-datepicker-overlay').style.display = 'none';
+};
+
+// ============================================
+// CUSTOM MONTH PICKER (Laporan - kalender bulan)
+// ============================================
+let mpDisplayYear = new Date().getFullYear();
+
+function openMonthPicker() {
+  mpDisplayYear = calendarDate.getFullYear();
+  renderMonthPickerGrid();
+  document.getElementById('modal-monthpicker-overlay').style.display = 'flex';
+}
+
+function renderMonthPickerGrid() {
+  document.getElementById('mp-year-label').textContent = mpDisplayYear;
+  const grid = document.getElementById('mp-grid');
+  grid.innerHTML = '';
+  const curMonth = calendarDate.getMonth();
+  const curYear  = calendarDate.getFullYear();
+  const now = new Date();
+  const todayMonth = now.getMonth();
+  const todayYear  = now.getFullYear();
+
+  BULAN.forEach((nama, i) => {
+    const isSelected = mpDisplayYear === curYear && i === curMonth;
+    const isToday    = mpDisplayYear === todayYear && i === todayMonth;
+    const btn = document.createElement('button');
+    btn.textContent = nama.slice(0, 3);
+    let style = 'padding:10px 0;border-radius:var(--radius-full);cursor:pointer;font-family:var(--font);font-size:12px;font-weight:400;';
+    if (isSelected) {
+      style += 'background:var(--text-primary);color:var(--bg-card);border:2px solid var(--text-primary);';
+    } else if (isToday) {
+      style += 'background:var(--border);color:var(--text-primary);border:2px solid var(--text-primary);';
+    } else {
+      style += 'background:var(--border);color:var(--text-primary);border:2px solid transparent;';
+    }
+    btn.style.cssText = style;
+    btn.onclick = () => {
+      calendarDate = new Date(mpDisplayYear, i, 1);
+      renderCalendar();
+      document.getElementById('modal-monthpicker-overlay').style.display = 'none';
+    };
+    grid.appendChild(btn);
+  });
+}
+
+document.getElementById('mp-prev-year').onclick = () => {
+  mpDisplayYear--;
+  renderMonthPickerGrid();
+};
+document.getElementById('mp-next-year').onclick = () => {
+  mpDisplayYear++;
+  renderMonthPickerGrid();
+};
+document.getElementById('mp-cancel').onclick = () => {
+  document.getElementById('modal-monthpicker-overlay').style.display = 'none';
+};
+document.getElementById('modal-monthpicker-overlay').onclick = (e) => {
+  if (e.target === document.getElementById('modal-monthpicker-overlay'))
+    document.getElementById('modal-monthpicker-overlay').style.display = 'none';
+};
+
+// ============================================
+// INIT
+// ============================================
+(async function init() {
+  // Check URL for password reset mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlHash   = window.location.hash;
+  const isReset   = urlParams.get('mode') === 'reset' || urlHash.includes('type=recovery');
+
+  // Init UI components first (no data needed)
+  initBeranda();
+  initLaporan();
+  initProfil();
+
+  // Listen for auth state changes
+  _sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      showAuthPage('reset');
+      return;
+    }
+    if (session?.user) {
+      _currentUser = session.user;
+      await showApp();
+    } else {
+      showAuthPage('masuk');
+    }
+  });
+
+  // Check existing session
+  const { data: { session } } = await _sb.auth.getSession();
+  if (isReset) {
+    showAuthPage('reset');
+  } else if (session?.user) {
+    _currentUser = session.user;
+    await showApp();
+  } else {
+    showAuthPage('masuk');
+  }
+})();
+
+</script>
+<div class="nav-fade"></div>
+</div><!-- /app-shell -->
+</body>
+</html>
