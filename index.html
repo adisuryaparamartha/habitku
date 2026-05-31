@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>habitku</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
-   
+<title>HabitKu</title>
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400&display=swap');
 
@@ -509,7 +508,7 @@ button, input, select, textarea {
   <!-- Logo -->
   <div style="text-align:center;margin-bottom:40px;">
     <div style="font-size:28px;font-weight:400;color:var(--text-primary);letter-spacing:-0.5px;">habitku</div>
-    <div style="font-size:12px;font-weight:300;color:var(--text-muted);margin-top:4px;">jadi lebih baik, setiap hari.</div>
+    <div style="font-size:12px;font-weight:300;color:var(--text-muted);margin-top:4px;">track your habits, mindfully</div>
   </div>
 
   <!-- Tab toggle: Masuk / Daftar -->
@@ -614,7 +613,7 @@ button, input, select, textarea {
   </div>
 
   <div style="text-align:center;margin-top:32px;">
-    <div style="font-size:11px;font-weight:300;color:var(--text-muted);">habitku v1.0 · mindfully designed & built by @suryaparamartha</div>
+    <div style="font-size:11px;font-weight:300;color:var(--text-muted);">habitku v1.0 · @suryaparamartha</div>
   </div>
 </div>
 
@@ -1104,8 +1103,8 @@ button, input, select, textarea {
 // ============================================
 // SUPABASE CONFIG — ganti dengan nilai dari project kamu
 // ============================================
-const SUPABASE_URL  = 'https://lmnjckyxvvgjrlkczmuo.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxtbmpja3l4dnZnanJsa2N6bXVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzE2MzgsImV4cCI6MjA5NTgwNzYzOH0.NnW8KqOK-yXKt3q3Pi6OjFx6izJgujBm1dSPGn3xKyw';
+const SUPABASE_URL  = 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
 // Load Supabase client (loaded via CDN in <head>)
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1219,8 +1218,9 @@ const DB = {
     if ('archivedAt'  in updates) patch.archived_at  = updates.archivedAt;
     if ('recoveredAt' in updates) patch.recovered_at = updates.recoveredAt;
     const { error } = await _sb.from('habits').update(patch).eq('id', id).eq('user_id', uid);
-    if (error) console.error('updateHabit:', error);
+    if (error) { console.error('updateHabit:', error); return false; }
     await this.loadHabits();
+    return true;
   },
 
   async deleteHabit(id) {
@@ -1253,16 +1253,21 @@ const DB = {
   async setCheck(dateStr, habitId, checked) {
     const uid = _currentUser?.id;
     if (!uid) return;
-    // Upsert
+    // Optimistic update: update cache first so UI feels instant
+    if (!this._logs[dateStr]) this._logs[dateStr] = {};
+    this._logs[dateStr][habitId] = checked;
+    // Then sync to DB
     const { error } = await _sb.from('habit_logs').upsert({
       user_id: uid,
       habit_id: habitId,
       log_date: dateStr,
       checked,
     }, { onConflict: 'user_id,habit_id,log_date' });
-    if (error) { console.error('setCheck:', error); return; }
-    if (!this._logs[dateStr]) this._logs[dateStr] = {};
-    this._logs[dateStr][habitId] = checked;
+    if (error) {
+      console.error('setCheck:', error);
+      // Revert optimistic update on error
+      this._logs[dateStr][habitId] = !checked;
+    }
   },
 
   // ── REFLECTIONS ─────────────────────────────────────────
@@ -1285,18 +1290,18 @@ const DB = {
   async setReflection(dateStr, text) {
     const uid = _currentUser?.id;
     if (!uid) return;
+    // Optimistic update
     if (text) {
+      this._reflections[dateStr] = text;
       const { error } = await _sb.from('reflections').upsert({
         user_id: uid,
         reflection_date: dateStr,
         content: text,
       }, { onConflict: 'user_id,reflection_date' });
-      if (error) { console.error('setReflection:', error); return; }
-      this._reflections[dateStr] = text;
+      if (error) { console.error('setReflection:', error); delete this._reflections[dateStr]; }
     } else {
-      // Delete if empty
-      await _sb.from('reflections').delete().eq('user_id', uid).eq('reflection_date', dateStr);
       delete this._reflections[dateStr];
+      await _sb.from('reflections').delete().eq('user_id', uid).eq('reflection_date', dateStr);
     }
   },
 
@@ -1352,12 +1357,23 @@ const DB = {
 // LOAD ALL USER DATA
 // ============================================
 async function loadAllData() {
-  await Promise.all([
-    DB.loadHabits(),
-    DB.loadLogs(),
-    DB.loadReflections(),
-    DB.loadProfile(),
-  ]);
+  const timeout = (ms, label) => new Promise((_, reject) =>
+    setTimeout(() => reject(new Error(`Timeout: ${label} took too long`)), ms)
+  );
+
+  const safeLoad = async (fn, label) => {
+    try {
+      await Promise.race([fn(), timeout(8000, label)]);
+      console.log(`✅ ${label} loaded`);
+    } catch(e) {
+      console.error(`❌ ${label} failed:`, e.message);
+    }
+  };
+
+  await safeLoad(() => DB.loadHabits(),      'loadHabits');
+  await safeLoad(() => DB.loadLogs(),        'loadLogs');
+  await safeLoad(() => DB.loadReflections(), 'loadReflections');
+  await safeLoad(() => DB.loadProfile(),     'loadProfile');
 }
 ;
 
@@ -1996,7 +2012,11 @@ function initBeranda() {
     if (data.repeat === 'weekly' && data.weeklyDays.length !== data.weeklyTimes) {
       alert(`Pilih tepat ${data.weeklyTimes} hari rencana!`); return;
     }
-    await DB.addHabit(data);
+    const newHabit = await DB.addHabit(data);
+    if (!newHabit) {
+      alert('Gagal menyimpan habit. Periksa koneksi internet kamu.');
+      return;
+    }
     closeSheet('add-habit');
     renderHabitCards();
   };
@@ -2997,7 +3017,11 @@ async function showApp() {
   document.getElementById('loading-overlay').style.flexDirection = 'column';
   document.getElementById('page-auth').style.display = 'none';
 
-  await loadAllData();
+  try {
+    await loadAllData();
+  } catch(e) {
+    console.error('loadAllData error:', e);
+  }
 
   const profile = DB.getProfile();
   applyDarkMode(profile.darkMode);
