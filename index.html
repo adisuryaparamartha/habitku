@@ -627,6 +627,7 @@ button, input, select, textarea {
     <line x1="16" y1="17" x2="8" y2="17"/>
   </svg>
   <div style="font-size:13px;font-weight:300;color:var(--text-muted);" id="loading-text">Memuat data...</div>
+  <div style="font-size:11px;font-weight:300;color:var(--text-muted);margin-top:4px;">Mungkin butuh beberapa detik...</div>
 </div>
 
 <div id="app-shell" style="display:none;">
@@ -1358,29 +1359,20 @@ const DB = {
 // LOAD ALL USER DATA
 // ============================================
 async function loadAllData() {
+  // Load all in parallel, timeout 30s to handle Supabase free tier cold start
   const timeout = (ms, label) => new Promise((_, reject) =>
-    setTimeout(() => reject(new Error(`Timeout: ${label} took too long`)), ms)
+    setTimeout(() => reject(new Error('Timeout: ' + label)), ms)
   );
+  const safeLoad = (fn, label) =>
+    Promise.race([fn(), timeout(30000, label)])
+      .catch(e => console.warn(label + ':', e.message));
 
-  const showToast = (msg) => {
-    const t = document.getElementById('debug-toast');
-    if (t) { t.textContent = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 8000); }
-  };
-
-  const safeLoad = async (fn, label) => {
-    try {
-      await Promise.race([fn(), timeout(8000, label)]);
-      console.log('OK: ' + label);
-    } catch(e) {
-      console.error('FAIL: ' + label + ' — ' + e.message);
-      showToast('Error: ' + label + ' — ' + e.message);
-    }
-  };
-
-  await safeLoad(() => DB.loadHabits(),      'loadHabits');
-  await safeLoad(() => DB.loadLogs(),        'loadLogs');
-  await safeLoad(() => DB.loadReflections(), 'loadReflections');
-  await safeLoad(() => DB.loadProfile(),     'loadProfile');
+  await Promise.all([
+    safeLoad(() => DB.loadHabits(),      'loadHabits'),
+    safeLoad(() => DB.loadLogs(),        'loadLogs'),
+    safeLoad(() => DB.loadReflections(), 'loadReflections'),
+    safeLoad(() => DB.loadProfile(),     'loadProfile'),
+  ]);
 }
 ;
 
