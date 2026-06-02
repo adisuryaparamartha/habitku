@@ -1359,19 +1359,12 @@ const DB = {
 // LOAD ALL USER DATA
 // ============================================
 async function loadAllData() {
-  // Load all in parallel, timeout 30s to handle Supabase free tier cold start
-  const timeout = (ms, label) => new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('Timeout: ' + label)), ms)
-  );
-  const safeLoad = (fn, label) =>
-    Promise.race([fn(), timeout(30000, label)])
-      .catch(e => console.warn(label + ':', e.message));
-
+  // Parallel load — no timeout, let Supabase take as long as needed
   await Promise.all([
-    safeLoad(() => DB.loadHabits(),      'loadHabits'),
-    safeLoad(() => DB.loadLogs(),        'loadLogs'),
-    safeLoad(() => DB.loadReflections(), 'loadReflections'),
-    safeLoad(() => DB.loadProfile(),     'loadProfile'),
+    DB.loadHabits().catch(e => console.error('loadHabits:', e)),
+    DB.loadLogs().catch(e => console.error('loadLogs:', e)),
+    DB.loadReflections().catch(e => console.error('loadReflections:', e)),
+    DB.loadProfile().catch(e => console.error('loadProfile:', e)),
   ]);
 }
 ;
@@ -3271,38 +3264,39 @@ document.getElementById('modal-monthpicker-overlay').onclick = (e) => {
   initProfil();
 
   // Listen for auth state changes
+  let _appLoaded = false;
   _sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
       showAuthPage('reset');
       return;
     }
-    if (session?.user) {
+    // TOKEN_REFRESHED fires when tab regains focus — don't reload data
+    if (event === 'TOKEN_REFRESHED' && _appLoaded) {
       _currentUser = session.user;
+      return;
+    }
+    if (session?.user && !_appLoaded) {
+      _currentUser = session.user;
+      _appLoaded = true;
       await showApp();
-    } else {
+    } else if (!session) {
+      _appLoaded = false;
       showAuthPage('masuk');
     }
   });
 
-  // Check existing session
-  let sessionResult;
-  try {
-    sessionResult = await _sb.auth.getSession();
-  } catch(e) {
-    const t = document.getElementById('debug-toast');
-    if (t) { t.textContent = 'Auth error: ' + e.message; t.style.display = 'block'; }
-    showAuthPage('masuk');
-    return;
-  }
-  const { data: { session } } = sessionResult;
+  // getSession triggers onAuthStateChange SIGNED_IN if session exists
+  // Just handle the reset case here; onAuthStateChange handles the rest
   if (isReset) {
     showAuthPage('reset');
-  } else if (session?.user) {
-    _currentUser = session.user;
-    await showApp();
-  } else {
-    showAuthPage('masuk');
+    return;
   }
+  // If no auth event fires within 3s, show login page
+  setTimeout(() => {
+    if (!_appLoaded && document.getElementById('page-auth').style.display === 'none') {
+      showAuthPage('masuk');
+    }
+  }, 3000);
 })();
 
 </script>
