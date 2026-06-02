@@ -3005,15 +3005,13 @@ function showAuthPage(mode) {
 }
 
 async function showApp() {
+  // Show loading, hide auth
   document.getElementById('loading-overlay').style.display = 'flex';
   document.getElementById('loading-overlay').style.flexDirection = 'column';
   document.getElementById('page-auth').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'none';
 
-  try {
-    await loadAllData();
-  } catch(e) {
-    console.error('loadAllData error:', e);
-  }
+  await loadAllData();
 
   const profile = DB.getProfile();
   applyDarkMode(profile.darkMode);
@@ -3021,7 +3019,6 @@ async function showApp() {
   document.getElementById('loading-overlay').style.display = 'none';
   document.getElementById('app-shell').style.display = '';
 
-  // Re-render all
   renderHero();
   renderReflection();
   renderWeekHeader();
@@ -3253,50 +3250,56 @@ document.getElementById('modal-monthpicker-overlay').onclick = (e) => {
 // INIT
 // ============================================
 (async function init() {
-  // Check URL for password reset mode
-  const urlParams = new URLSearchParams(window.location.search);
-  const urlHash   = window.location.hash;
-  const isReset   = urlParams.get('mode') === 'reset' || urlHash.includes('type=recovery');
-
-  // Init UI components first (no data needed)
+  // Init UI components
   initBeranda();
   initLaporan();
   initProfil();
 
-  // Listen for auth state changes
-  let _appLoaded = false;
+  // Handle password reset via URL hash
+  const urlHash = window.location.hash;
+  if (urlHash.includes('type=recovery')) {
+    showAuthPage('reset');
+    return;
+  }
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('mode') === 'reset') {
+    showAuthPage('reset');
+    return;
+  }
+
+  // Show loading immediately
+  document.getElementById('loading-overlay').style.display = 'flex';
+  document.getElementById('loading-overlay').style.flexDirection = 'column';
+
+  // Get existing session directly — most reliable approach
+  const { data: { session }, error } = await _sb.auth.getSession();
+
+  if (session?.user) {
+    _currentUser = session.user;
+    await showApp();
+  } else {
+    document.getElementById('loading-overlay').style.display = 'none';
+    showAuthPage('masuk');
+  }
+
+  // Listen for future auth changes (sign in, sign out, token refresh)
   _sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
       showAuthPage('reset');
       return;
     }
-    // TOKEN_REFRESHED fires when tab regains focus — don't reload data
-    if (event === 'TOKEN_REFRESHED' && _appLoaded) {
+    if (event === 'SIGNED_IN' && !_currentUser) {
       _currentUser = session.user;
-      return;
-    }
-    if (session?.user && !_appLoaded) {
-      _currentUser = session.user;
-      _appLoaded = true;
       await showApp();
-    } else if (!session) {
-      _appLoaded = false;
+    }
+    if (event === 'SIGNED_OUT') {
+      _currentUser = null;
       showAuthPage('masuk');
+    }
+    if (event === 'TOKEN_REFRESHED' && session?.user) {
+      _currentUser = session.user; // just update user, don't reload
     }
   });
-
-  // getSession triggers onAuthStateChange SIGNED_IN if session exists
-  // Just handle the reset case here; onAuthStateChange handles the rest
-  if (isReset) {
-    showAuthPage('reset');
-    return;
-  }
-  // If no auth event fires within 3s, show login page
-  setTimeout(() => {
-    if (!_appLoaded && document.getElementById('page-auth').style.display === 'none') {
-      showAuthPage('masuk');
-    }
-  }, 3000);
 })();
 
 </script>
